@@ -1,0 +1,70 @@
+import os
+import FreeCAD as App
+
+from PySide.QtCore import QT_TRANSLATE_NOOP
+
+if App.GuiUp:
+    import FreeCADGui as Gui
+    from PySide import QtCore, QtGui, QtWidgets
+
+import UtilsAssembly
+import Assembly_rc
+
+
+title = "Assembly Command to show Dependency Map"
+author = "Ondsel"
+url = "https://www.freecad.org/"
+
+class CommandCreateDependencyMap:
+    def init(self):
+        pass
+
+    def GetResources(self):
+
+        return {
+            "Pixmap": "Std_ViewHome",
+            "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateDependencyMap", "Create a Dependency Map"),
+            "Accel": "Z",
+            "ToolTip": "<p>"
+            + QT_TRANSLATE_NOOP(
+                "Assembly_CreateDependencyMap",
+                "Create a Dependency Map",
+            )
+            + "</p>",
+            "CmdType": "ForEdit",
+        }
+
+    def IsActive(self):
+        return UtilsAssembly.isAssemblyCommandActive()
+
+    def Activated(self):
+        assembly = UtilsAssembly.activeAssembly()
+        if not assembly:
+            return
+
+        # Gui.addModule("UtilsAssembly")
+        # App.setActiveTransaction("Create a Dependency Map")
+        # Gui.doCommand("UtilsAssembly.activeAssembly().solve()")
+        # App.closeActiveTransaction()
+
+        self.panel = TaskAssemblyCreateDependencyMap()
+        Gui.Control.showDialog(self.panel)
+
+
+if App.GuiUp:
+    Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
+
+
+class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
+    def init(self, parent=None):
+        super(TaskAssemblyCreateDependencyMap, self).init(parent)
+        self.setWindowTitle("Curent Dependency Map")
+        self.setGeometry(100, 100, 400, 300)
+        self.setModal(True)
+
+        layout = QtWidgets.QVBoxLayout()
+
+        label = QtWidgets.QLabel("This is a Dependency Map")
+        layout.addWidget(label)
+
+        self.setLayout(layout)

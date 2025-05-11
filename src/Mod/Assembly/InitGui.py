@@ -63,7 +63,7 @@ class AssemblyWorkbench(Workbench):
         # load the builtin modules
         from PySide import QtCore, QtGui
         from PySide.QtCore import QT_TRANSLATE_NOOP
-        import CommandCreateAssembly, CommandInsertLink, CommandInsertNewPart, CommandCreateJoint, CommandSolveAssembly, CommandExportASMT, CommandCreateView, CommandCreateSimulation, CommandCreateBom
+        import CommandCreateAssembly, CommandInsertLink, CommandInsertNewPart, CommandCreateJoint, CommandSolveAssembly, CommandExportASMT, CommandCreateView, CommandCreateSimulation, CommandCreateBom, CommandCreateDependencyMap
         import Preferences
 
         FreeCADGui.addLanguagePath(":/translations")
@@ -105,13 +105,18 @@ class AssemblyWorkbench(Workbench):
             "Assembly_CreateJointScrew",
             "Assembly_CreateJointGearBelt",
         ]
+        
+        cmdDependencyMap = [
+            "Assembly_CreateDependencyMap", # TODO add export, tree and graph
+        ]
 
         self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly"), cmdList)
         self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly Joints"), cmdListJoints)
+        self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly Dependency Map"), cmdDependencyMap)
 
         self.appendMenu(
             [QT_TRANSLATE_NOOP("Workbench", "&Assembly")],
-            cmdList + cmdListMenuOnly + ["Separator"] + cmdListJoints,
+            cmdList + cmdListMenuOnly + ["Separator"] + cmdListJoints + cmdDependencyMap,
         )
 
     def Activated(self):
