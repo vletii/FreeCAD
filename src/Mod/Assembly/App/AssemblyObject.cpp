@@ -513,7 +513,8 @@ void AssemblyObject::redrawJointPlacement(App::DocumentObject* joint)
     joint->purgeTouched();
 }
 
-void AssemblyObject::getDependencies()
+
+std::vector<int> AssemblyObject::getDependencies()
 {
     Base::Console().Message("Assembly::getDependencies() not implemented\n");
 
@@ -527,7 +528,7 @@ void AssemblyObject::getDependencies()
         App::DocumentObject* toPart;    // downstream part
     };
 
-    std::vector<Edge> dependencyGraph;
+    std::vector<Edge> dependencyMap;
 
     for (App::DocumentObject* joint : joints)
     {
@@ -535,17 +536,17 @@ void AssemblyObject::getDependencies()
             continue;
 
         // Get the two parts connected by this joint
-        // add to graph
+        // add to Map
     }
-
     Base::Console().Message("assembly dep map\n");
-    for (const Edge& e : dependencyGraph)
+    for (const Edge& e : dependencyMap)
     {
         Base::Console().Message("  %s  --[%s]-->  %s\n", e.fromPart->getNameInDocument(),
             e.joint->getNameInDocument(), e.toPart->getNameInDocument());
     }
     Base::Console().Message("end of dep map\n");
 
+    return {1, 2, 3};
 }
 
 void AssemblyObject::recomputeJointPlacements(std::vector<App::DocumentObject*> joints)

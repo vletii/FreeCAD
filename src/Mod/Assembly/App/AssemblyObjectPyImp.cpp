@@ -191,8 +191,17 @@ PyObject* AssemblyObjectPy::exportAsASMT(PyObject* args) const
 
 PyObject* AssemblyObjectPy::getDependencies(PyObject* args) const
 {
-    this->getAssemblyObjectPtr()->getDependencies();
-    Py_Return;
+    std::vector<int> deps = this->getAssemblyObjectPtr()->getDependencies();
+
+    Base::Console().Message("Dependencies: ");
+
+    // Convert std::vector<int> to Py::List
+    Py::List pyDeps;
+    for (int val : deps) {
+        pyDeps.append(Py::Int(val));
+    }
+
+    return Py::new_reference_to(pyDeps);
 }
 
 Py::List AssemblyObjectPy::getJoints() const

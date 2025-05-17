@@ -102,7 +102,8 @@ public:
     void undoSolve();
     void clearUndo();
 
-    void getDependencies();
+    
+    std::vector<int> getDependencies();
 
     void exportAsASMT(std::string fileName);
 

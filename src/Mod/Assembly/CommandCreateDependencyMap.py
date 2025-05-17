@@ -48,9 +48,17 @@ class CommandCreateDependencyMap:
         # App.closeActiveTransaction()
 
         Gui.doCommand("assembly = UtilsAssembly.activeAssembly()")
-        Gui.doCommand("assembly.getDependencies()")
+        Gui.doCommand("deps = assembly.getDependencies()")
+        Gui.doCommand("print(deps)")
+        commands = (
+            f'assembly = UtilsAssembly.activeAssembly()\n'
+            "deps = assembly.getDependencies()\n"
+            "print(deps)\n"
+        )
+        deps = assembly.getDependencies()
+        Gui.doCommand(commands)
 
-        self.panel = TaskAssemblyCreateDependencyMap()
+        self.panel = TaskAssemblyCreateDependencyMap(deps)
         Gui.Control.showDialog(self.panel)
 
 if App.GuiUp:
@@ -58,7 +66,7 @@ if App.GuiUp:
 
 
 class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, deps=None, parent=None):
         super(TaskAssemblyCreateDependencyMap, self).__init__(parent)
 
         self.setWindowTitle("Current Dependency Map")
@@ -69,3 +77,12 @@ class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
 
         label = QtWidgets.QLabel("This is a Dependency Map")
         layout.addWidget(label)
+        self.text_area = QtWidgets.QTextEdit()
+        self.text_area.setReadOnly(True)
+
+        if deps:
+            # If deps is a Python list of strings or objects with __str__ output
+            self.text_area.setText("\n".join(str(dep) for dep in deps))
+        else:
+            self.text_area.setText("No dependencies found.")
+        layout.addWidget(self.text_area)
