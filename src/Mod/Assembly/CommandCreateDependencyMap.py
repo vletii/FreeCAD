@@ -22,49 +22,50 @@ class CommandCreateDependencyMap:
     def GetResources(self):
 
         return {
-            "Pixmap": "Std_ViewHome",
+            "Pixmap": "Assembly_ExportASMT",
             "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateDependencyMap", "Create a Dependency Map"),
-            "Accel": "Z",
-            "ToolTip": "<p>"
-            + QT_TRANSLATE_NOOP(
+            # "Accel": "Z", # shortcut key - define later maybe
+            "ToolTip": QT_TRANSLATE_NOOP(
                 "Assembly_CreateDependencyMap",
                 "Create a Dependency Map",
-            )
-            + "</p>",
-            "CmdType": "ForEdit",
+            ),
+            # "CmdType": "ForEdit", # not needed i think?
         }
 
     def IsActive(self):
+        # return App.ActiveDocument is not None
         return UtilsAssembly.isAssemblyCommandActive()
 
     def Activated(self):
+        print("CommandCreateDependencyMap.Activated()")
+        
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
 
-        # Gui.addModule("UtilsAssembly")
+        Gui.addModule("UtilsAssembly")
         # App.setActiveTransaction("Create a Dependency Map")
-        # Gui.doCommand("UtilsAssembly.activeAssembly().solve()")
         # App.closeActiveTransaction()
+
+        Gui.doCommand("assembly = UtilsAssembly.activeAssembly()")
+        Gui.doCommand("assembly.getDependencies()")
 
         self.panel = TaskAssemblyCreateDependencyMap()
         Gui.Control.showDialog(self.panel)
-
 
 if App.GuiUp:
     Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
 
 
 class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
-    def init(self, parent=None):
-        super(TaskAssemblyCreateDependencyMap, self).init(parent)
-        self.setWindowTitle("Curent Dependency Map")
+    def __init__(self, parent=None):
+        super(TaskAssemblyCreateDependencyMap, self).__init__(parent)
+
+        self.setWindowTitle("Current Dependency Map")
         self.setGeometry(100, 100, 400, 300)
         self.setModal(True)
 
-        layout = QtWidgets.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout(self)
 
         label = QtWidgets.QLabel("This is a Dependency Map")
         layout.addWidget(label)
-
-        self.setLayout(layout)

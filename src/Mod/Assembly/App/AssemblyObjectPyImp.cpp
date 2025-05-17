@@ -189,6 +189,12 @@ PyObject* AssemblyObjectPy::exportAsASMT(PyObject* args) const
     Py_Return;
 }
 
+PyObject* AssemblyObjectPy::getDependencies(PyObject* args) const
+{
+    this->getAssemblyObjectPtr()->getDependencies();
+    Py_Return;
+}
+
 Py::List AssemblyObjectPy::getJoints() const
 {
     Py::List ret;
