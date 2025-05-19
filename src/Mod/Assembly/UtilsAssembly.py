@@ -1354,3 +1354,23 @@ def generatePropertySettings(documentObject):
             # print("Not processing properties of type ", propertyType)
             pass
     return "\n".join(commands) + "\n"
+
+def getSubAssemblies(assembly):
+    subAssemblies = []
+    for obj in assembly.OutList:
+        if isLinkGroup(obj):
+            subAssemblies.append(obj)
+    return subAssemblies
+
+
+def getParts(assembly):
+    parts = []
+    for obj in assembly.OutList:
+        if isLink(obj):
+            # Check if the link is to a part
+            linked_obj = obj.getLinkedObject()
+            if linked_obj.TypeId == "App::Part" or linked_obj.TypeId == "Part::Feature":
+                parts.append(linked_obj)
+        if obj.TypeId == "App::Part" or obj.TypeId == "Part::Feature":
+            parts.append(obj)
+    return parts

@@ -6,6 +6,7 @@ from PySide.QtCore import QT_TRANSLATE_NOOP
 if App.GuiUp:
     import FreeCADGui as Gui
     from PySide import QtCore, QtGui, QtWidgets
+    import graphviz
 
 import UtilsAssembly
 import Assembly_rc
@@ -55,34 +56,80 @@ class CommandCreateDependencyMap:
             "deps = assembly.getDependencies()\n"
             "print(deps)\n"
         )
-        deps = assembly.getDependencies()
+        
         Gui.doCommand(commands)
 
-        self.panel = TaskAssemblyCreateDependencyMap(deps)
+        self.panel = TaskAssemblyCreateDependencyMapGraphviz()
         Gui.Control.showDialog(self.panel)
 
 if App.GuiUp:
     Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
 
+   
+class TaskAssemblyCreateDependencyMapGraphviz(QtGui.QDialog):
+    def __init__(self):  
+        super().__init__()
+        self.assembly = UtilsAssembly.activeAssembly()
+        if not self.assembly:
+            return
 
-class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
-    def __init__(self, deps=None, parent=None):
-        super(TaskAssemblyCreateDependencyMap, self).__init__(parent)
+        self.form = QtGui.QWidget()  
+        self.form.setWindowTitle("Assembly Dependencies")  
+        
 
-        self.setWindowTitle("Current Dependency Map")
-        self.setGeometry(100, 100, 400, 300)
-        self.setModal(True)
+        self.colors = {
+            "default": "lightgrey",
+            "grounded": "lightblue",
+            "joint": "#00FF00",
+            "subassembly1": "#0000FF",
+            "subassembly2": "#FFFF00",
+            "subassembly3": "#FF00FF",
+        }
 
-        layout = QtWidgets.QVBoxLayout(self)
+        self.updateGraph()
+        self.form.setWindowTitle("Assembly Dependencies")
+        self.form.setGeometry(100, 100, 800, 600)
 
-        label = QtWidgets.QLabel("This is a Dependency Map")
-        layout.addWidget(label)
-        self.text_area = QtWidgets.QTextEdit()
-        self.text_area.setReadOnly(True)
+        #render the graph
+        self.g.render(filename="assembly_dependency_map", format="dot")
+        self.g.render(filename="assembly_dependency_map", format="png")
+        self.g.view()  # Open the rendered graph in the default viewer
 
-        if deps:
-            # If deps is a Python list of strings or objects with __str__ output
-            self.text_area.setText("\n".join(str(dep) for dep in deps))
-        else:
-            self.text_area.setText("No dependencies found.")
-        layout.addWidget(self.text_area)
+    def updateGraph(self):
+        self.g = graphviz.Graph()
+        self.g.attr()
+
+        self.addNodesToGraph(self.g)
+        self.addEdgesToGraph(self.g, self.assembly)
+
+    def addNodesToGraph(self, g):
+        assembly = UtilsAssembly.activeAssembly()
+        with g.subgraph(name = 'cluster_0 ') as s:
+            print("Getparts")
+            for part in UtilsAssembly.getParts(assembly):
+                
+                g.node(part.Name, color=self.colors["default"], style="filled", fillcolor=self.colors["default"])
+        subassembly = UtilsAssembly.getSubAssemblies(assembly)
+        for sub in subassembly:
+            self.addsSubGraphNodes(g, sub)
+    def addsSubGraphNodes(self, g, assembly):
+        with g.subgraph(name = f'cluster_{assembly}') as s:
+            s.attr(label=assembly)
+            s.attr(color=self.colors["subassembly1"])
+            s.attr(style="filled")
+            s.attr(fillcolor=self.colors["subassembly1"])
+            s.attr("node", style="filled", fillcolor=self.colors["subassembly1"])
+            
+            for obj in UtilsAssembly.getParts(assembly):
+                g.node(obj.Name, label=obj.Label, color=self.colors["default"], style="filled", fillcolor=self.colors["default"])
+
+    def addEdgesToGraph(self, g, assembly):
+        joints = assembly.Joints
+        for joint in joints:
+            g.node(f'"{joint.Label}"', label=joint.Label, color=self.colors["joint"], style="filled", fillcolor=self.colors["joint"], shape='ellipse')
+            part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
+            part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
+
+            if part1 and part2:
+                g.edge(f'"{part1.Name}"', f'"{joint.Label}"')
+                g.edge(f'"{joint.Label}"', f'"{part2.Name}"')

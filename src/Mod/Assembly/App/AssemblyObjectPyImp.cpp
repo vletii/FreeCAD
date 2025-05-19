@@ -191,7 +191,7 @@ PyObject* AssemblyObjectPy::exportAsASMT(PyObject* args) const
 
 PyObject* AssemblyObjectPy::getDependencies(PyObject* args) const
 {
-    std::vector<int> deps = this->getAssemblyObjectPtr()->getDependencies();
+    std::vector<int> deps = getAssemblyObjectPtr()->getDependencies();
 
     Base::Console().Message("Dependencies: ");
 
@@ -215,3 +215,44 @@ Py::List AssemblyObjectPy::getJoints() const
 
     return ret;
 }
+
+// Py::List AssemblyObjectPy::getGroup() const
+// {
+//     Py::List ret;
+//     std::vector<App::DocumentObject*> list = getAssemblyObjectPtr()->getGroup();
+
+//     for (auto It : list) {
+//         ret.append(Py::Object(It->getPyObject(), true));
+//     }
+
+//     return ret;
+// }
+
+// Py::List AssemblyObjectPy::getSubAssemblies() const
+// {
+//     Py::List ret;
+//     std::vector<App::DocumentObject*> list = getAssemblyObjectPtr()->getSubAssemblies();
+
+//     for (auto It : list) {
+//         ret.append(Py::Object(It->getPyObject(), true));
+//     }
+
+//     return ret;
+// }
+
+// PyObject* AssemblyObjectPy::getLinkedAssembly(PyObject* args) const
+// {
+//     PyObject* pyobj;
+
+//     if (!PyArg_ParseTuple(args, "O!", &(App::DocumentObjectPy::Type), &pyobj)) {
+//         return nullptr;
+//     }
+//     auto* obj = static_cast<App::DocumentObjectPy*>(pyobj)->getDocumentObjectPtr();
+//     auto* assembly = this->getAssemblyObjectPtr()->getLinkedAssembly(obj);
+//     if (assembly) {
+//         return Py::new_reference_to(assembly->getPyObject());
+//     }
+//     else {
+//         Py_RETURN_NONE;
+//     }
+// }
