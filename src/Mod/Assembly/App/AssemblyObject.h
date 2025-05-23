@@ -102,9 +102,6 @@ public:
     void undoSolve();
     void clearUndo();
 
-    
-    std::vector<int> getDependencies();
-
     void exportAsASMT(std::string fileName);
 
     Base::Placement getMbdPlacement(std::shared_ptr<MbD::ASMTPart> mbdPart);

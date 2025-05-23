@@ -171,17 +171,6 @@
         </UserDocu>
       </Documentation>
     </Methode>
-
-    <Methode Name="getDependencies" Const="true">
-      <Documentation>
-        <UserDocu>
-          Get dependencies of the assembly
-
-          getDependencies()
-        </UserDocu>
-      </Documentation>
-    </Methode>
-
     <Attribute Name="Joints" ReadOnly="true">
       <Documentation>
         <UserDocu>A list of all joints this assembly has.</UserDocu>
