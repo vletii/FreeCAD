@@ -34,62 +34,43 @@ class CommandCreateDependencyMap:
         }
 
     def IsActive(self):
-        #return App.ActiveDocument is not None
-        return UtilsAssembly.isAssemblyCommandActive() 
+        return UtilsAssembly.isAssemblyCommandActive()
 
     def Activated(self):
-        print("CommandCreateDependencyMap.Activated()")
-        
+
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
 
         Gui.addModule("UtilsAssembly")
-        # App.setActiveTransaction("Create a Dependency Map")
-        # App.closeActiveTransaction()
-
-        Gui.doCommand("assembly = UtilsAssembly.activeAssembly()")
-        Gui.doCommand("deps = assembly.getDependencies()")
-        Gui.doCommand("print(deps)")
-        commands = (
-            f'assembly = UtilsAssembly.activeAssembly()\n'
-            "deps = assembly.getDependencies()\n"
-            "print(deps)\n"
-        )
-        
-        Gui.doCommand(commands)
-
-        self.panel = AssemblyCreateDependencyMapGraphviz()
-        Gui.Control.showDialog(self.panel)
+        panel = TaskAssemblyCreateDependencyMap()
+        Gui.Control.showDialog(panel)
 
 if App.GuiUp:
     Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
 
    
-class AssemblyCreateDependencyMapGraphviz(QtWidgets.QDialog):
+class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
     def __init__(self):  
         super().__init__()
         self.assembly = UtilsAssembly.activeAssembly()
+
         if not self.assembly:
             return
+
+        self.setWindowTitle("Assembly Dependency Map")
+        self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.form)
+
+        # generate button
+        self.form.btnGenerate.clicked.connect(self.updateGraph)
         
-        # layout = QtWidgets.QVBoxLayout(self)
-        # self.setWindowTitle("Assembly Dependency Map")
-        # buttonBox = QDialogButtonBox(
-        #     QDialogButtonBox.hidejoints
-        # )
-
-
-
+        # buttonBox = QDialogButtonBox(QDialogButtonBox.hidejoints)
 
         # self.hideJoints = QtWidgets.QCheckBox("Hide Joints")
         # self.hideJoints.setChecked(True)
-
-
-        # #generate button
-        # self.generateButton = QtWidgets.QPushButton("Generate")
-        # self.generateButton.setToolTip("Generate the Dependency Map")
-        # self.generateButton.clicked.connect(self.updateGraph)
 
         self.updateGraph()
 
@@ -145,3 +126,15 @@ class AssemblyCreateDependencyMapGraphviz(QtWidgets.QDialog):
                 #     g.edge(joint.Label, part2.Label)
                 # else:
                 g.edge(part1.Label, part2.Label)
+
+    def accept(self):
+        self.deactivate()
+        return True
+
+    def reject(self):
+        self.deactivate()
+        return True
+
+    def deactivate(self):
+        if Gui.Control.activeDialog():
+            Gui.Control.closeDialog()

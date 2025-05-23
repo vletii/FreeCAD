@@ -32,6 +32,7 @@
         <file>panels/TaskAssemblyCreateJoint.ui</file>
         <file>panels/TaskAssemblyInsertLink.ui</file>
         <file>panels/TaskAssemblyCreateView.ui</file>
+        <file>panels/TaskAssemblyCreateDependencyMap.ui</file>
         <file>panels/TaskAssemblyCreateSimulation.ui</file>
         <file>preferences/Assembly.ui</file>
         <file>icons/Assembly_CreateJointDistance.svg</file>
