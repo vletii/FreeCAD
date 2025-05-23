@@ -1358,8 +1358,14 @@ def generatePropertySettings(documentObject):
 def getSubAssemblies(assembly):
     subAssemblies = []
     for obj in assembly.OutList:
-        if isLinkGroup(obj):
+        if obj.TypeId == "Assembly::AssemblyLink" or obj.TypeId == "Assembly::AssemblyObject":
+            print("Subassemblies:\t" + obj.Name)
+            for subObj in obj.OutList:
+                print("-Subassembly parts:\t" + subObj.Label + "\t" + subObj.TypeId)
+            for subObj in obj.InList:
+                print("--Subassembly parts:\t" + subObj.Label)
             subAssemblies.append(obj)
+
     return subAssemblies
 
 
@@ -1368,9 +1374,16 @@ def getParts(assembly):
     for obj in assembly.OutList:
         if isLink(obj):
             # Check if the link is to a part
-            linked_obj = obj.getLinkedObject()
-            if linked_obj.TypeId == "App::Part" or linked_obj.TypeId == "Part::Feature":
-                parts.append(linked_obj)
-        if obj.TypeId == "App::Part" or obj.TypeId == "Part::Feature":
+            linkobj = obj.getLinkedObject()
+            #print("Link to part:\t" + obj.Label + "\t" + obj.TypeId)
+            if linkobj.TypeId == "App::Part" or linkobj.TypeId == "Part::Feature" or linkobj.TypeId == "Part::FeaturePython":
+                #print("LinkPart:\t" + obj.Label + "\t" + obj.TypeId)
+                parts.append(obj)
+        elif obj.TypeId == "App::Part" or obj.TypeId == "Part::Feature" or obj.TypeId == "Part::FeaturePython":
+            #print("Part:\t" + obj.Label + "\t" + obj.TypeId)
             parts.append(obj)
     return parts
+
+def getNameinDoc(part):
+    doc = part.Document
+    return doc.getObject(part.Name)

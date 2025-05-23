@@ -34,8 +34,8 @@ class CommandCreateDependencyMap:
         }
 
     def IsActive(self):
-        # return App.ActiveDocument is not None
-        return UtilsAssembly.isAssemblyCommandActive()
+        #return App.ActiveDocument is not None
+        return UtilsAssembly.isAssemblyCommandActive() 
 
     def Activated(self):
         print("CommandCreateDependencyMap.Activated()")
@@ -59,39 +59,41 @@ class CommandCreateDependencyMap:
         
         Gui.doCommand(commands)
 
-        self.panel = TaskAssemblyCreateDependencyMapGraphviz()
+        self.panel = AssemblyCreateDependencyMapGraphviz()
         Gui.Control.showDialog(self.panel)
 
 if App.GuiUp:
     Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
 
    
-class TaskAssemblyCreateDependencyMapGraphviz(QtGui.QDialog):
+class AssemblyCreateDependencyMapGraphviz(QtWidgets.QDialog):
     def __init__(self):  
         super().__init__()
         self.assembly = UtilsAssembly.activeAssembly()
         if not self.assembly:
             return
-
-        self.form = QtGui.QWidget()  
-        self.form.setWindowTitle("Assembly Dependencies")  
         
+        # layout = QtWidgets.QVBoxLayout(self)
+        # self.setWindowTitle("Assembly Dependency Map")
+        # buttonBox = QDialogButtonBox(
+        #     QDialogButtonBox.hidejoints
+        # )
 
-        self.colors = {
-            "default": "lightgrey",
-            "grounded": "lightblue",
-            "joint": "#00FF00",
-            "subassembly1": "#0000FF",
-            "subassembly2": "#FFFF00",
-            "subassembly3": "#FF00FF",
-        }
+
+
+
+        # self.hideJoints = QtWidgets.QCheckBox("Hide Joints")
+        # self.hideJoints.setChecked(True)
+
+
+        # #generate button
+        # self.generateButton = QtWidgets.QPushButton("Generate")
+        # self.generateButton.setToolTip("Generate the Dependency Map")
+        # self.generateButton.clicked.connect(self.updateGraph)
 
         self.updateGraph()
-        self.form.setWindowTitle("Assembly Dependencies")
-        self.form.setGeometry(100, 100, 800, 600)
 
         #render the graph
-        self.g.render(filename="assembly_dependency_map", format="dot")
         self.g.render(filename="assembly_dependency_map", format="png")
         self.g.view()  # Open the rendered graph in the default viewer
 
@@ -102,34 +104,44 @@ class TaskAssemblyCreateDependencyMapGraphviz(QtGui.QDialog):
         self.addNodesToGraph(self.g)
         self.addEdgesToGraph(self.g, self.assembly)
 
+    
+
     def addNodesToGraph(self, g):
         assembly = UtilsAssembly.activeAssembly()
-        with g.subgraph(name = 'cluster_0 ') as s:
-            print("Getparts")
-            for part in UtilsAssembly.getParts(assembly):
-                
-                g.node(part.Name, color=self.colors["default"], style="filled", fillcolor=self.colors["default"])
         subassembly = UtilsAssembly.getSubAssemblies(assembly)
         for sub in subassembly:
             self.addsSubGraphNodes(g, sub)
+        with g.subgraph(name = 'cluster_0 ') as s:
+            print("Getparts")
+            for part in UtilsAssembly.getParts(assembly):
+                print("----Assembly parts:" + part.Label + " " + part.Name)
+                s.node(part.Name, style="filled", fillcolor="lightgrey")
+        
+
     def addsSubGraphNodes(self, g, assembly):
-        with g.subgraph(name = f'cluster_{assembly}') as s:
-            s.attr(label=assembly)
-            s.attr(color=self.colors["subassembly1"])
-            s.attr(style="filled")
-            s.attr(fillcolor=self.colors["subassembly1"])
-            s.attr("node", style="filled", fillcolor=self.colors["subassembly1"])
-            
+        #subgraph
+        with g.subgraph(name = 'cluster_' + assembly.Name) as s:
+            s.attr(style="filled", color= "lightpink", label=assembly.Name)
+            print("Subgraph nodes:")
+            subassembly = UtilsAssembly.getSubAssemblies(assembly)
+            for sub in subassembly:
+                self.addsSubGraphNodes(g, sub)
             for obj in UtilsAssembly.getParts(assembly):
-                g.node(obj.Name, label=obj.Label, color=self.colors["default"], style="filled", fillcolor=self.colors["default"])
+                s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
 
     def addEdgesToGraph(self, g, assembly):
         joints = assembly.Joints
         for joint in joints:
-            g.node(f'"{joint.Label}"', label=joint.Label, color=self.colors["joint"], style="filled", fillcolor=self.colors["joint"], shape='ellipse')
+            #g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
             part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
             part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
-
             if part1 and part2:
-                g.edge(f'"{part1.Name}"', f'"{joint.Label}"')
-                g.edge(f'"{joint.Label}"', f'"{part2.Name}"')
+                # g.edge(part1.Label, joint.Label)
+                # g.edge(joint.Label, part2.Label)
+                #if hidejoints isnt checked
+                # if self.hideJoints.isChecked() == False:
+                #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
+                #     g.edge(part1.Label, joint.Label)
+                #     g.edge(joint.Label, part2.Label)
+                # else:
+                g.edge(part1.Label, part2.Label)
