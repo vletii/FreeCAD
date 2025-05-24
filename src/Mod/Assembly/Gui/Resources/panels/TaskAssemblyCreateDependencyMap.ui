@@ -26,7 +26,7 @@
       <bool>true</bool>
      </property>
      <property name="prefEntry" stdset="0">
-      <cstring>InsertShowJoints</cstring>
+      <cstring>ShowJoints</cstring>
      </property>
      <property name="prefPath" stdset="0">
       <cstring>Mod/Assembly</cstring>
@@ -45,7 +45,7 @@
       <bool>true</bool>
      </property>
      <property name="prefEntry" stdset="0">
-      <cstring>InsertShowSubAssemblies</cstring>
+      <cstring>ShowSubAssemblies</cstring>
      </property>
      <property name="prefPath" stdset="0">
       <cstring>Mod/Assembly</cstring>
@@ -56,6 +56,13 @@
     <widget class="QPushButton" name="btnGenerate">
      <property name="text">
       <string>Generate Dependency Map</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QPushButton" name="btnExport">
+     <property name="text">
+      <string>Export Dependency Map</string>
      </property>
     </widget>
    </item>

@@ -119,8 +119,9 @@ class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
             if part1 and part2:
                 # g.edge(part1.Label, joint.Label)
                 # g.edge(joint.Label, part2.Label)
-                #if hidejoints isnt checked
-                # if self.hideJoints.isChecked() == False:
+                
+                if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
+                    print("show joints enabled")
                 #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
                 #     g.edge(part1.Label, joint.Label)
                 #     g.edge(joint.Label, part2.Label)
