@@ -5,7 +5,10 @@ from PySide.QtCore import QT_TRANSLATE_NOOP
 
 if App.GuiUp:
     import FreeCADGui as Gui
-    from PySide import QtCore, QtGui, QtWidgets
+    from PySide import QtCore, QtWidgets
+    from PySide.QtSvg import QSvgRenderer
+    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene
+    from PySide.QtSvg import QGraphicsSvgItem
     import graphviz
 
 import UtilsAssembly
@@ -30,7 +33,6 @@ class CommandCreateDependencyMap:
                 "Assembly_CreateDependencyMap",
                 "Create a Dependency Map",
             ),
-            # "CmdType": "ForEdit", # not needed i think?
         }
 
     def IsActive(self):
@@ -46,11 +48,7 @@ class CommandCreateDependencyMap:
         panel = TaskAssemblyCreateDependencyMap()
         Gui.Control.showDialog(panel)
 
-if App.GuiUp:
-    Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
-
-   
-class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
+class TaskAssemblyCreateDependencyMap(QtCore.QObject):
     def __init__(self):  
         super().__init__()
         self.assembly = UtilsAssembly.activeAssembly()
@@ -58,27 +56,14 @@ class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
         if not self.assembly:
             return
 
-        self.setWindowTitle("Assembly Dependency Map")
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
 
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(self.form)
-
         # generate button
-        self.form.btnGenerate.clicked.connect(self.updateGraph)
-        
-        # buttonBox = QDialogButtonBox(QDialogButtonBox.hidejoints)
+        self.form.btnGenerate.clicked.connect(self.renderMap)
+        self.form.btnExport.clicked.connect(self.exportMap)
 
-        # self.hideJoints = QtWidgets.QCheckBox("Hide Joints")
-        # self.hideJoints.setChecked(True)
-
-        self.updateGraph()
-
-        #render the graph
-        self.g.render(filename="assembly_dependency_map", format="png")
-        self.g.view()  # Open the rendered graph in the default viewer
-
-    def updateGraph(self):
+    def renderMap(self):
+        print("renderMap called")
         self.g = graphviz.Graph()
         self.g.attr()
 
@@ -139,3 +124,44 @@ class TaskAssemblyCreateDependencyMap(QtWidgets.QDialog):
     def deactivate(self):
         if Gui.Control.activeDialog():
             Gui.Control.closeDialog()
+
+
+class GraphvizSvgView(QMainWindow):
+    def __init__(self, svg_data, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Dependency Graph")
+        self._zoom = 0
+
+        self.scene = QGraphicsScene(self)
+        self.renderer = QSvgRenderer(svg_data, self)
+        self.svg_item = QGraphicsSvgItem()
+        self.svg_item.setSharedRenderer(self.renderer)
+        self.scene.addItem(self.svg_item)
+
+        self.view = QGraphicsView(self.scene, self)
+        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
+
+        self.setCentralWidget(self.view)
+
+    def wheelEvent(self, event):
+        zoomInFactor = 1.25
+        zoomOutFactor = 1 / zoomInFactor
+
+        if event.angleDelta().y() > 0:
+            zoomFactor = zoomInFactor
+            self._zoom += 1
+        else:
+            zoomFactor = zoomOutFactor
+            self._zoom -= 1
+
+        self.view.scale(zoomFactor, zoomFactor)
+
+def openDependencyMap(svg_data):
+    mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
+    if mdi_area:
+        view = GraphvizSvgView(svg_data)
+        sub_window = mdi_area.addSubWindow(view)
+        sub_window.show()
+
+if App.GuiUp:
+    Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
