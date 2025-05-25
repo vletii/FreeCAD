@@ -7,7 +7,9 @@ if App.GuiUp:
     import FreeCADGui as Gui
     from PySide import QtCore, QtWidgets
     from PySide.QtSvg import QSvgRenderer
-    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene
+    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog, QToolBar, QAction, QFileDialog
+    from PySide2.QtGui import QImage, QPainter
+    from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
     import graphviz
 
@@ -58,7 +60,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
 
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
 
-        # generate button
         self.form.btnGenerate.clicked.connect(self.renderMap)
         self.form.btnExport.clicked.connect(self.exportMap)
 
@@ -70,7 +71,58 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.addNodesToGraph(self.g)
         self.addEdgesToGraph(self.g, self.assembly)
 
-    
+        # TODO refactor this to create a graph view, instead of calling opeDependencyMap
+        self.svg_data = self.g.pipe(format="svg")
+        openDependencyMap(self.svg_data)
+        
+    def exportMap(self):
+        print("exportMap called")
+
+        # TODO add pdf
+        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg)"
+        path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
+
+        if not path:
+            return
+
+        if "PNG" in selected_filter:
+            fmt = "PNG"
+        elif "JPEG" in selected_filter:
+            fmt = "JPEG"
+        elif "Bitmap" in selected_filter:
+            fmt = "BMP"
+        elif "Scalable" in selected_filter:
+            fmt = "SVG"
+        # else:
+        #     fmt = "PNG"  # fallback
+
+        if not path.lower().endswith(f".{fmt.lower()}"):
+            path += f".{fmt.lower()}"
+
+        if fmt == "SVG":
+            with open(path, "wb") as f:
+                f.write(self.svg_data)
+            print(f"SVG saved to {path}")
+        else:
+            self.renderer = QSvgRenderer(self.svg_data)
+            bounds = self.renderer.viewBoxF()
+            size = bounds.size().toSize()
+
+            if size.width() == 0 or size.height() == 0:
+                print("Invalid SVG dimensions.")
+                return
+
+            image = QImage(size, QImage.Format_ARGB32)
+            image.fill(Qt.transparent)
+
+            painter = QPainter(image)
+            self.renderer.render(painter)
+            painter.end()
+
+            if image.save(path, fmt.upper()):
+                print(f"Image saved to {path}")
+            else:
+                print("Failed to save image.")
 
     def addNodesToGraph(self, g):
         assembly = UtilsAssembly.activeAssembly()
