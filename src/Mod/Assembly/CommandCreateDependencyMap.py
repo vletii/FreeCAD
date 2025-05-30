@@ -11,6 +11,7 @@ if App.GuiUp:
     from PySide2.QtGui import QImage, QPainter
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
+    from PySide2.QtPrintSupport import QPrinter
     import graphviz
 
 import UtilsAssembly
@@ -73,8 +74,7 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.visualizeMap()
         
     def exportMap(self):
-        # TODO add pdf
-        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg)"
+        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
         path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
 
         if not path:
@@ -88,8 +88,8 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             fmt = "BMP"
         elif "Scalable" in selected_filter:
             fmt = "SVG"
-        # else:
-        #     fmt = "PNG"  # fallback
+        elif "PDF" in selected_filter:
+            fmt = "pdf"
 
         if not path.lower().endswith(f".{fmt.lower()}"):
             path += f".{fmt.lower()}"
@@ -97,14 +97,27 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         if fmt == "SVG":
             with open(path, "wb") as f:
                 f.write(self.svg_data)
-            print(f"SVG saved to {path}")
+
+        elif fmt == "pdf":
+            renderer = QSvgRenderer(self.svg_data)
+            printer = QPrinter()
+            printer.setOutputFormat(QPrinter.PdfFormat)
+            printer.setOutputFileName(path)
+
+            bounds = renderer.viewBoxF()
+            printer.setPaperSize(bounds.size(), QPrinter.Point)
+            printer.setFullPage(True)
+
+            painter = QPainter(printer)
+            renderer.render(painter)
+            painter.end()
+
         else:
             self.renderer = QSvgRenderer(self.svg_data)
             bounds = self.renderer.viewBoxF()
             size = bounds.size().toSize()
 
             if size.width() == 0 or size.height() == 0:
-                print("Invalid SVG dimensions.")
                 return
 
             image = QImage(size, QImage.Format_ARGB32)
@@ -113,11 +126,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             painter = QPainter(image)
             self.renderer.render(painter)
             painter.end()
-
-            if image.save(path, fmt.upper()):
-                print(f"Image saved to {path}")
-            else:
-                print("Failed to save image.")
 
     def addNodesToGraph(self, g):
         assembly = UtilsAssembly.activeAssembly()
