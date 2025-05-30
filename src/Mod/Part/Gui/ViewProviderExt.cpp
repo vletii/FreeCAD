@@ -564,7 +564,7 @@ std::vector<Base::Vector3d> ViewProviderPartExt::getModelPoints(const SoPickedPo
     try {
         std::vector<Base::Vector3d> pts;
         std::string element = this->getElement(pp->getDetail());
-        const auto &shape = Part::Feature::getTopoShape(getObject());
+        const auto &shape = Part::Feature::getTopoShape(getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform);
 
         TopoDS_Shape subShape = shape.getSubShape(element.c_str());
 
@@ -943,7 +943,7 @@ void ViewProviderPartExt::updateVisual()
     haction.apply(this->lineset);
     haction.apply(this->nodeset);
 
-    TopoDS_Shape cShape = Part::Feature::getShape(getObject());
+    TopoDS_Shape cShape = Part::Feature::getShape(getObject(), Part::ShapeOption::ResolveLink | Part::ShapeOption::Transform);
     if (cShape.IsNull()) {
         coords  ->point      .setNum(0);
         norm    ->vector     .setNum(0);
@@ -1312,8 +1312,8 @@ void ViewProviderPartExt::updateVisual()
 
 #   ifdef FC_DEBUG
         // printing some information
-        Base::Console().Log("ViewProvider update time: %f s\n",Base::TimeElapsed::diffTimeF(start_time,Base::TimeElapsed()));
-        Base::Console().Log("Shape tria info: Faces:%d Edges:%d Nodes:%d Triangles:%d IdxVec:%d\n",numFaces,numEdges,numNodes,numTriangles,numLines);
+        Base::Console().log("ViewProvider update time: %f s\n",Base::TimeElapsed::diffTimeF(start_time,Base::TimeElapsed()));
+        Base::Console().log("Shape tria info: Faces:%d Edges:%d Nodes:%d Triangles:%d IdxVec:%d\n",numFaces,numEdges,numNodes,numTriangles,numLines);
 #   else
     (void)numEdges;
 #   endif

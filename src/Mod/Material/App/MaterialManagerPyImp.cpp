@@ -147,13 +147,15 @@ Py::List MaterialManagerPy::getMaterialLibraries() const
                 reinterpret_cast<const std::shared_ptr<Materials::MaterialLibraryLocal>&>(lib);
             libTuple.setItem(0, Py::String(materialLibrary->getName().toStdString()));
             libTuple.setItem(1, Py::String(materialLibrary->getDirectoryPath().toStdString()));
-            libTuple.setItem(2, Py::String(materialLibrary->getIconPath().toStdString()));
+            libTuple.setItem(2,
+                             Py::Bytes(Py::Bytes(materialLibrary->getIcon().data(),
+                                                 materialLibrary->getIcon().size())));
         }
         else
         {
             libTuple.setItem(0, Py::String());
             libTuple.setItem(1, Py::String());
-            libTuple.setItem(2, Py::String());
+            libTuple.setItem(2, Py::Bytes());
         }
 
         list.append(libTuple);
@@ -255,8 +257,8 @@ PyObject* MaterialManagerPy::save(PyObject* args, PyObject* kwds)
         return nullptr;
     }
 
-    Base::Console().Log("library name %s\n", libraryName);
-    Base::Console().Log("path %s\n", path);
+    Base::Console().log("library name %s\n", libraryName);
+    Base::Console().log("path %s\n", path);
 
     MaterialPy* material;
     if (QLatin1String(obj->ob_type->tp_name) == QLatin1String("Materials.Material")) {

@@ -51,7 +51,7 @@ class MaterialManagerLocal;
 class MaterialFilter;
 class MaterialFilterOptions;
 
-class MaterialsExport MaterialManager: public Base::BaseClass
+class MaterialsExport MaterialManager: public Base::BaseClass, ParameterGrp::ObserverType
 {
     TYPESYSTEM_HEADER_WITH_OVERRIDE();
 
@@ -69,23 +69,27 @@ public:
     static QString defaultMaterialUUID();
 
     // Library management
+    bool useExternal() const { return _useExternal; }
     std::shared_ptr<std::list<std::shared_ptr<MaterialLibrary>>> getLibraries();
     std::shared_ptr<std::list<std::shared_ptr<MaterialLibrary>>> getLocalLibraries();
     std::shared_ptr<MaterialLibrary> getLibrary(const QString& name) const;
-    void createLibrary(const QString& libraryName, const QString& icon, bool readOnly = true);
+    void createLibrary(const QString& libraryName,
+                       const QString& iconPath,
+                       bool readOnly = true);
     void createLocalLibrary(const QString& libraryName,
                             const QString& directory,
-                            const QString& icon,
+                            const QString& iconPath,
                             bool readOnly = true);
     void renameLibrary(const QString& libraryName, const QString& newName);
-    void changeIcon(const QString& libraryName, const QString& icon);
+    void changeIcon(const QString& libraryName, const QString& iconPath);
     void removeLibrary(const QString& libraryName);
-    std::shared_ptr<std::vector<std::tuple<QString, QString, QString>>>
-    libraryMaterials(const QString& libraryName);
-    std::shared_ptr<std::vector<std::tuple<QString, QString, QString>>>
+    std::shared_ptr<std::vector<LibraryObject>>
+    libraryMaterials(const QString& libraryName, bool local = false);
+    std::shared_ptr<std::vector<LibraryObject>>
     libraryMaterials(const QString& libraryName,
                      const std::shared_ptr<MaterialFilter>& filter,
-                     const MaterialFilterOptions& options);
+                     const MaterialFilterOptions& options,
+                     bool local = false);
     bool isLocalLibrary(const QString& libraryName);
 
     // Folder management
@@ -136,14 +140,34 @@ public:
     void dereference(std::shared_ptr<Material> material) const;
     void dereference() const;
 
+    /// Observer message from the ParameterGrp
+    void OnChange(ParameterGrp::SubjectType& rCaller, ParameterGrp::MessageType Reason) override;
+
+#if defined(BUILD_MATERIAL_EXTERNAL)
+    void migrateToExternal(const std::shared_ptr<Materials::MaterialLibrary>& library);
+    void validateMigration(const std::shared_ptr<Materials::MaterialLibrary>& library);
+
+    // Cache functions
+    static double materialHitRate();
+#endif
+
 private:
     MaterialManager();
+
+    FC_DISABLE_COPY_MOVE(MaterialManager);
+
     static void initManagers();
 
     static MaterialManager* _manager;
 
+#if defined(BUILD_MATERIAL_EXTERNAL)
+    static std::unique_ptr<MaterialManagerExternal> _externalManager;
+#endif
     static std::unique_ptr<MaterialManagerLocal> _localManager;
     static QMutex _mutex;
+    static bool _useExternal;
+
+    ParameterGrp::handle _hGrp;
 };
 
 }  // namespace Materials

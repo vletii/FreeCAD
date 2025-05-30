@@ -61,7 +61,7 @@ class Arc(gui_base_original.Creator):
         return {"Pixmap": "Draft_Arc",
                 "Accel": "A, R",
                 "MenuText": QT_TRANSLATE_NOOP("Draft_Arc", "Arc"),
-                "ToolTip": QT_TRANSLATE_NOOP("Draft_Arc", "Creates a circular arc by a center point and a radius.\nCTRL to snap, SHIFT to constrain.")}
+                "ToolTip": QT_TRANSLATE_NOOP("Draft_Arc", "Creates a circular arc by a center point and a radius.\nSHIFT to constrain.")}
 
     def Activated(self):
         """Execute when the command is called."""
@@ -291,6 +291,36 @@ class Arc(gui_base_original.Creator):
                         self.step = 4
                         self.drawArc()
 
+        self.updateHints()
+
+    def getHints(self):
+        hint_global = Gui.InputHint(translate("draft", "%1 toggle global"), Gui.UserInput.KeyG)
+        hint_continue = Gui.InputHint(translate("draft", "%1 toggle continue"), Gui.UserInput.KeyN)
+
+        if self.step == 0:
+            return [
+                Gui.InputHint(translate("draft", "%1 pick center"), Gui.UserInput.MouseLeft),
+                hint_global,
+                hint_continue,
+            ]
+        elif self.step == 1:
+            return [
+                Gui.InputHint(translate("draft", "%1 pick radius"), Gui.UserInput.MouseLeft),
+                hint_continue,
+            ]
+        elif self.step == 2:
+            return [
+                Gui.InputHint(translate("draft", "%1 pick starting angle"), Gui.UserInput.MouseLeft),
+                hint_continue,
+            ]
+        elif self.step == 3:
+            return [
+                Gui.InputHint(translate("draft", "%1 pick aperture"), Gui.UserInput.MouseLeft),
+                hint_continue,
+            ]
+        else:
+            return []
+
     def drawArc(self):
         """Actually draw the arc object."""
         rot, sup, pts, fil = self.getStrings()
@@ -478,7 +508,7 @@ class Arc_3Points(gui_base.GuiCommandBase):
         return {"Pixmap": "Draft_Arc_3Points",
                 "Accel": "A, T",
                 "MenuText": QT_TRANSLATE_NOOP("Draft_Arc_3Points", "Arc by 3 points"),
-                "ToolTip": QT_TRANSLATE_NOOP("Draft_Arc_3Points", "Creates a circular arc by picking 3 points.\nCTRL to snap, SHIFT to constrain.")}
+                "ToolTip": QT_TRANSLATE_NOOP("Draft_Arc_3Points", "Creates a circular arc by 3 points.\nSHIFT to constrain.")}
 
     def Activated(self):
         """Execute when the command is called."""
@@ -498,11 +528,10 @@ class Arc_3Points(gui_base.GuiCommandBase):
 
         Gui.Snapper.getPoint(callback=self.getPoint,
                              movecallback=self.drawArc)
-        self.ui = Gui.Snapper.ui  ## self must have a ui for _finish_command_on_doc_close in doc_observer.py.
-        self.ui.sourceCmd = self
-        self.ui.setTitle(title=translate("draft", "Arc by 3 points"),
-                         icon="Draft_Arc_3Points")
-        self.ui.continueCmd.show()
+        Gui.Snapper.ui.sourceCmd = self
+        Gui.Snapper.ui.setTitle(title=translate("draft", "Arc by 3 points"),
+                                icon="Draft_Arc_3Points")
+        Gui.Snapper.ui.continueCmd.show()
 
     def getPoint(self, point, info):
         """Get the point by clicking on the 3D view.
@@ -543,11 +572,10 @@ class Arc_3Points(gui_base.GuiCommandBase):
             Gui.Snapper.getPoint(last=self.points[-1],
                                  callback=self.getPoint,
                                  movecallback=self.drawArc)
-            self.ui = Gui.Snapper.ui
-            self.ui.sourceCmd = self
-            self.ui.setTitle(title=translate("draft", "Arc by 3 points"),
-                             icon="Draft_Arc_3Points")
-            self.ui.continueCmd.show()
+            Gui.Snapper.ui.sourceCmd = self
+            Gui.Snapper.ui.setTitle(title=translate("draft", "Arc by 3 points"),
+                                    icon="Draft_Arc_3Points")
+            Gui.Snapper.ui.continueCmd.show()
 
         else:
             # If three points were already picked in the 3D view

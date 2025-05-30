@@ -123,10 +123,7 @@ TaskHoleParameters::TaskHoleParameters(ViewProviderHole* HoleView, QWidget* pare
     ui->HoleCutType->setCurrentIndex(pcHole->HoleCutType.getValue());
 
     ui->HoleCutCustomValues->setChecked(pcHole->HoleCutCustomValues.getValue());
-    ui->HoleCutCustomValues->setHidden(
-        pcHole->HoleCutType.getValue() < 5
-        || pcHole->HoleCutCustomValues.isReadOnly()
-    );
+    ui->HoleCutCustomValues->setHidden(pcHole->HoleCutType.getValue() < 4);
     // HoleCutDiameter must not be smaller or equal than the Diameter
     updateHoleCutLimits(pcHole);
     ui->HoleCutDiameter->setValue(pcHole->HoleCutDiameter.getValue());
@@ -277,7 +274,7 @@ void TaskHoleParameters::threadedChanged()
 
     ui->ThreadGroupBox->setVisible(isChecked);
     ui->ClearanceWidget->setHidden(isChecked);
-    // run modelThreadChanged 
+    // run modelThreadChanged
     // it will handle the visibility of the model options
     modelThreadChanged();
     recomputeFeature();
@@ -385,25 +382,19 @@ void TaskHoleParameters::holeCutTypeChanged(int index)
     recomputeFeature();
 
     // apply the result to the widgets
-    ui->HoleCutCustomValues->setHidden(hole->HoleCutCustomValues.isReadOnly());
     ui->HoleCutCustomValues->setChecked(hole->HoleCutCustomValues.getValue());
 
     // HoleCutCustomValues is only enabled for screw definitions
     // we must do this after recomputeFeature() because this gives us the info if
     // the type is a countersink and thus if HoleCutCountersinkAngle can be enabled
-    std::string HoleCutTypeString = hole->HoleCutType.getValueAsString();
 
-    if (
-        HoleCutTypeString == "None"
-        || HoleCutTypeString == "Counterbore"
-        || HoleCutTypeString == "Countersink"
-        || HoleCutTypeString == "Counterdrill"
-    ) {
-        ui->HoleCutCustomValues->setVisible(false);
+    if (hole->HoleCutType.getValue() < 4) {
+        ui->HoleCutCustomValues->setHidden(true);
     }
     else {  // screw definition
         // we can have the case that we have no normed values
         // in this case HoleCutCustomValues is read-only AND true
+        ui->HoleCutCustomValues->setHidden(false);
         bool isCustom = ui->HoleCutCustomValues->isChecked();
         ui->HoleCutDiameter->setEnabled(isCustom);
         ui->HoleCutDepth->setEnabled(isCustom);
@@ -781,7 +772,7 @@ void TaskHoleParameters::changedObject(const App::Document&, const App::Property
     }
     bool ro = Prop.isReadOnly();
 
-    Base::Console().Log("Parameter %s was updated\n", Prop.getName());
+    Base::Console().log("Parameter %s was updated\n", Prop.getName());
 
     auto updateCheckable = [&](QCheckBox* widget, bool value) {
         [[maybe_unused]] QSignalBlocker blocker(widget);
@@ -1182,7 +1173,7 @@ void TaskHoleParameters::Observer::slotChangedObject(const App::DocumentObject& 
                                                      const App::Property& Prop)
 {
     if (&Obj == hole) {
-        Base::Console().Log("Parameter %s was updated with a new value\n", Prop.getName());
+        Base::Console().log("Parameter %s was updated with a new value\n", Prop.getName());
         if (Obj.getDocument()) {
             owner->changedObject(*Obj.getDocument(), Prop);
         }

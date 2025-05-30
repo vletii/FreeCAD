@@ -87,6 +87,10 @@ public:
 
     static QString libraryPath(const std::shared_ptr<Materials::Material>& material);
 
+    static QIcon getIcon(const std::shared_ptr<Materials::MaterialLibrary>& library);
+    static QIcon getIcon(const std::shared_ptr<Materials::ModelLibrary>& library);
+    static QIcon getIcon(const std::shared_ptr<Materials::Library>& library);
+
     void updateMaterialAppearance();
     void updateMaterialProperties();
     void updateMaterialGeneral();
@@ -218,7 +222,7 @@ private:
     }
     void setIncludeEmptyLibraries(bool value)
     {
-        Base::Console().Log("setIncludeEmptyLibraries(%s)\n", (value ? "true" : "false"));
+        Base::Console().log("setIncludeEmptyLibraries(%s)\n", (value ? "true" : "false"));
         _filterOptions.setIncludeEmptyLibraries(value);
     }
 
