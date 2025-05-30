@@ -28,6 +28,7 @@ class CommandCreateDependencyMap:
     def GetResources(self):
 
         return {
+            # TODO change pixmap icon
             "Pixmap": "Assembly_ExportASMT",
             "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateDependencyMap", "Create a Dependency Map"),
             # "Accel": "Z", # shortcut key - define later maybe
@@ -41,12 +42,10 @@ class CommandCreateDependencyMap:
         return UtilsAssembly.isAssemblyCommandActive()
 
     def Activated(self):
-
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
 
-        Gui.addModule("UtilsAssembly")
         panel = TaskAssemblyCreateDependencyMap()
         Gui.Control.showDialog(panel)
 
@@ -58,26 +57,22 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         if not self.assembly:
             return
 
+        self.dependency_map = None
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
 
         self.form.btnGenerate.clicked.connect(self.renderMap)
         self.form.btnExport.clicked.connect(self.exportMap)
 
     def renderMap(self):
-        print("renderMap called")
         self.g = graphviz.Graph()
         self.g.attr()
 
         self.addNodesToGraph(self.g)
         self.addEdgesToGraph(self.g, self.assembly)
 
-        # TODO refactor this to create a graph view, instead of calling opeDependencyMap
-        self.svg_data = self.g.pipe(format="svg")
-        openDependencyMap(self.svg_data)
+        self.visualizeMap()
         
     def exportMap(self):
-        print("exportMap called")
-
         # TODO add pdf
         filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg)"
         path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
@@ -130,9 +125,7 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         for sub in subassembly:
             self.addsSubGraphNodes(g, sub)
         with g.subgraph(name = 'cluster_0 ') as s:
-            print("Getparts")
             for part in UtilsAssembly.getParts(assembly):
-                print("----Assembly parts:" + part.Label + " " + part.Name)
                 s.node(part.Name, style="filled", fillcolor="lightgrey")
         
 
@@ -140,7 +133,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         #subgraph
         with g.subgraph(name = 'cluster_' + assembly.Name) as s:
             s.attr(style="filled", color= "lightpink", label=assembly.Name)
-            print("Subgraph nodes:")
             subassembly = UtilsAssembly.getSubAssemblies(assembly)
             for sub in subassembly:
                 self.addsSubGraphNodes(g, sub)
@@ -157,13 +149,30 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
                 # g.edge(part1.Label, joint.Label)
                 # g.edge(joint.Label, part2.Label)
                 
-                if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
-                    print("show joints enabled")
+                # if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
+                    # print("show joints enabled")
                 #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
                 #     g.edge(part1.Label, joint.Label)
                 #     g.edge(joint.Label, part2.Label)
                 # else:
                 g.edge(part1.Label, part2.Label)
+
+    def visualizeMap(self):
+        self.svg_data = self.g.pipe(format="svg")
+
+        mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
+
+        if not mdi_area: 
+            return
+
+        if self.dependency_map:
+            self.dependency_map.updateSvg(self.svg_data)
+            self.dependency_map.raise_()
+            self.dependency_map.activateWindow()
+        else:
+            self.dependency_map = GraphvizSvgView(self.svg_data, self.dependency_map)
+            sub_window = mdi_area.addSubWindow(self.dependency_map)
+            sub_window.show()
 
     def accept(self):
         self.deactivate()
@@ -179,8 +188,9 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
 
 
 class GraphvizSvgView(QMainWindow):
-    def __init__(self, svg_data, parent=None):
+    def __init__(self, svg_data, dependency_map, parent=None):
         super().__init__(parent)
+        self.dependency_map = dependency_map
         self.setWindowTitle("Dependency Graph")
         self._zoom = 0
 
@@ -207,13 +217,12 @@ class GraphvizSvgView(QMainWindow):
             self._zoom -= 1
 
         self.view.scale(zoomFactor, zoomFactor)
+    
+    def updateSvg(self, svg_data):
+        self.renderer.load(svg_data)
+        self.view.resetTransform()
+        self._zoom = 0
 
-def openDependencyMap(svg_data):
-    mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
-    if mdi_area:
-        view = GraphvizSvgView(svg_data)
-        sub_window = mdi_area.addSubWindow(view)
-        sub_window.show()
 
 if App.GuiUp:
     Gui.addCommand("Assembly_CreateDependencyMap", CommandCreateDependencyMap())
