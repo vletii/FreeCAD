@@ -12,11 +12,10 @@ if App.GuiUp:
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
     from PySide2.QtPrintSupport import QPrinter
-    import graphviz
+    
 
 import UtilsAssembly
 import Assembly_rc
-
 
 title = "Assembly Command to show Dependency Map"
 author = "Ondsel"
@@ -46,6 +45,12 @@ class CommandCreateDependencyMap:
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
+        try:  
+            import graphviz 
+        except ImportError:  
+            print("pygraphviz not available - install and try again later")
+            return
+        Gui.addModule("UtilsAssembly")
 
         panel = TaskAssemblyCreateDependencyMap()
         Gui.Control.showDialog(panel)
@@ -157,13 +162,15 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
                 # g.edge(part1.Label, joint.Label)
                 # g.edge(joint.Label, part2.Label)
                 
-                # if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
-                    # print("show joints enabled")
+                if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
+                    print("show joints enabled")
+                    g.edge(part1.Label, part2.Label, style="dashed", color="blue", label=joint.Label, labelfloat="true")
                 #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
                 #     g.edge(part1.Label, joint.Label)
                 #     g.edge(joint.Label, part2.Label)
                 # else:
-                g.edge(part1.Label, part2.Label)
+                else:
+                    g.edge(part1.Label, part2.Label)
 
     def visualizeMap(self):
         self.svg_data = self.g.pipe(format="svg")
