@@ -12,7 +12,7 @@ if App.GuiUp:
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
     from PySide2.QtPrintSupport import QPrinter
-    import graphviz
+    # import graphviz
 
 import UtilsAssembly
 import Assembly_rc
@@ -61,126 +61,126 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.dependency_map = None
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
 
-        self.form.btnGenerate.clicked.connect(self.renderMap)
-        self.form.btnExport.clicked.connect(self.exportMap)
+        # self.form.btnGenerate.clicked.connect(self.renderMap)
+        # self.form.btnExport.clicked.connect(self.exportMap)
 
-    def renderMap(self):
-        self.g = graphviz.Graph()
-        self.g.attr()
+    # def renderMap(self):
+    #     # self.g = graphviz.Graph()
+    #     # self.g.attr()
 
-        self.addNodesToGraph(self.g)
-        self.addEdgesToGraph(self.g, self.assembly)
+    #     # self.addNodesToGraph(self.g)
+    #     # self.addEdgesToGraph(self.g, self.assembly)
 
-        self.visualizeMap()
+    #     self.visualizeMap()
         
-    def exportMap(self):
-        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
-        path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
+    # def exportMap(self):
+    #     filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
+    #     path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
 
-        if not path:
-            return
+    #     if not path:
+    #         return
 
-        if "PNG" in selected_filter:
-            fmt = "PNG"
-        elif "JPEG" in selected_filter:
-            fmt = "JPEG"
-        elif "Bitmap" in selected_filter:
-            fmt = "BMP"
-        elif "Scalable" in selected_filter:
-            fmt = "SVG"
-        elif "PDF" in selected_filter:
-            fmt = "pdf"
+    #     if "PNG" in selected_filter:
+    #         fmt = "PNG"
+    #     elif "JPEG" in selected_filter:
+    #         fmt = "JPEG"
+    #     elif "Bitmap" in selected_filter:
+    #         fmt = "BMP"
+    #     elif "Scalable" in selected_filter:
+    #         fmt = "SVG"
+    #     elif "PDF" in selected_filter:
+    #         fmt = "pdf"
 
-        if not path.lower().endswith(f".{fmt.lower()}"):
-            path += f".{fmt.lower()}"
+    #     if not path.lower().endswith(f".{fmt.lower()}"):
+    #         path += f".{fmt.lower()}"
 
-        if fmt == "SVG":
-            with open(path, "wb") as f:
-                f.write(self.svg_data)
+    #     if fmt == "SVG":
+    #         with open(path, "wb") as f:
+    #             f.write(self.svg_data)
 
-        elif fmt == "pdf":
-            renderer = QSvgRenderer(self.svg_data)
-            printer = QPrinter()
-            printer.setOutputFormat(QPrinter.PdfFormat)
-            printer.setOutputFileName(path)
+    #     elif fmt == "pdf":
+    #         renderer = QSvgRenderer(self.svg_data)
+    #         printer = QPrinter()
+    #         printer.setOutputFormat(QPrinter.PdfFormat)
+    #         printer.setOutputFileName(path)
 
-            bounds = renderer.viewBoxF()
-            printer.setPaperSize(bounds.size(), QPrinter.Point)
-            printer.setFullPage(True)
+    #         bounds = renderer.viewBoxF()
+    #         printer.setPaperSize(bounds.size(), QPrinter.Point)
+    #         printer.setFullPage(True)
 
-            painter = QPainter(printer)
-            renderer.render(painter)
-            painter.end()
+    #         painter = QPainter(printer)
+    #         renderer.render(painter)
+    #         painter.end()
 
-        else:
-            self.renderer = QSvgRenderer(self.svg_data)
-            bounds = self.renderer.viewBoxF()
-            size = bounds.size().toSize()
+    #     else:
+    #         self.renderer = QSvgRenderer(self.svg_data)
+    #         bounds = self.renderer.viewBoxF()
+    #         size = bounds.size().toSize()
 
-            if size.width() == 0 or size.height() == 0:
-                return
+    #         if size.width() == 0 or size.height() == 0:
+    #             return
 
-            image = QImage(size, QImage.Format_ARGB32)
-            image.fill(Qt.transparent)
+    #         image = QImage(size, QImage.Format_ARGB32)
+    #         image.fill(Qt.transparent)
 
-            painter = QPainter(image)
-            self.renderer.render(painter)
-            painter.end()
+    #         painter = QPainter(image)
+    #         self.renderer.render(painter)
+    #         painter.end()
 
-    def addNodesToGraph(self, g):
-        assembly = UtilsAssembly.activeAssembly()
-        subassembly = UtilsAssembly.getSubAssemblies(assembly)
-        for sub in subassembly:
-            self.addsSubGraphNodes(g, sub)
-        with g.subgraph(name = 'cluster_0 ') as s:
-            for part in UtilsAssembly.getParts(assembly):
-                s.node(part.Name, style="filled", fillcolor="lightgrey")
+    # def addNodesToGraph(self, g):
+    #     assembly = UtilsAssembly.activeAssembly()
+    #     subassembly = UtilsAssembly.getSubAssemblies(assembly)
+    #     for sub in subassembly:
+    #         self.addsSubGraphNodes(g, sub)
+    #     with g.subgraph(name = 'cluster_0 ') as s:
+    #         for part in UtilsAssembly.getParts(assembly):
+    #             s.node(part.Name, style="filled", fillcolor="lightgrey")
         
 
-    def addsSubGraphNodes(self, g, assembly):
-        #subgraph
-        with g.subgraph(name = 'cluster_' + assembly.Name) as s:
-            s.attr(style="filled", color= "lightpink", label=assembly.Name)
-            subassembly = UtilsAssembly.getSubAssemblies(assembly)
-            for sub in subassembly:
-                self.addsSubGraphNodes(g, sub)
-            for obj in UtilsAssembly.getParts(assembly):
-                s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
+    # def addsSubGraphNodes(self, g, assembly):
+    #     #subgraph
+    #     with g.subgraph(name = 'cluster_' + assembly.Name) as s:
+    #         s.attr(style="filled", color= "lightpink", label=assembly.Name)
+    #         subassembly = UtilsAssembly.getSubAssemblies(assembly)
+    #         for sub in subassembly:
+    #             self.addsSubGraphNodes(g, sub)
+    #         for obj in UtilsAssembly.getParts(assembly):
+    #             s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
 
-    def addEdgesToGraph(self, g, assembly):
-        joints = assembly.Joints
-        for joint in joints:
-            #g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
-            part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
-            part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
-            if part1 and part2:
-                # g.edge(part1.Label, joint.Label)
-                # g.edge(joint.Label, part2.Label)
+    # def addEdgesToGraph(self, g, assembly):
+    #     joints = assembly.Joints
+    #     for joint in joints:
+    #         #g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
+    #         part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
+    #         part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
+    #         if part1 and part2:
+    #             # g.edge(part1.Label, joint.Label)
+    #             # g.edge(joint.Label, part2.Label)
                 
-                # if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
-                    # print("show joints enabled")
-                #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
-                #     g.edge(part1.Label, joint.Label)
-                #     g.edge(joint.Label, part2.Label)
-                # else:
-                g.edge(part1.Label, part2.Label)
+    #             # if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
+    #                 # print("show joints enabled")
+    #             #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
+    #             #     g.edge(part1.Label, joint.Label)
+    #             #     g.edge(joint.Label, part2.Label)
+    #             # else:
+    #             g.edge(part1.Label, part2.Label)
 
-    def visualizeMap(self):
-        self.svg_data = self.g.pipe(format="svg")
+    # def visualizeMap(self):
+        # self.svg_data = self.g.pipe(format="svg")
 
-        mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
+        # mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
 
-        if not mdi_area: 
-            return
+        # if not mdi_area: 
+        #     return
 
-        if self.dependency_map:
-            self.dependency_map.updateSvg(self.svg_data)
-            self.dependency_map.raise_()
-            self.dependency_map.activateWindow()
-        else:
-            self.dependency_map = GraphvizSvgView(self.svg_data, self.dependency_map)
-            sub_window = mdi_area.addSubWindow(self.dependency_map)
-            sub_window.show()
+        # if self.dependency_map:
+        #     self.dependency_map.updateSvg(self.svg_data)
+        #     self.dependency_map.raise_()
+        #     self.dependency_map.activateWindow()
+        # else:
+        #     self.dependency_map = GraphvizSvgView(self.svg_data, self.dependency_map)
+        #     sub_window = mdi_area.addSubWindow(self.dependency_map)
+        #     sub_window.show()
 
     def accept(self):
         self.deactivate()
