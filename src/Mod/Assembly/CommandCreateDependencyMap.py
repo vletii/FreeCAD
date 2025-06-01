@@ -11,7 +11,7 @@ if App.GuiUp:
     from PySide2.QtGui import QImage, QPainter
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
-    from PySide2.QtPrintSupport import QPrinter
+    # from PySide2.QtPrintSupport import QPrinter
     # import graphviz
 
 import UtilsAssembly
