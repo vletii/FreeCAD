@@ -11,7 +11,7 @@ if App.GuiUp:
     from PySide2.QtGui import QImage, QPainter
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
-    from PySide2.QtPrintSupport import QPrinter
+    #from PySide2.QtPrintSupport import QPrinter
     
 
 import UtilsAssembly
@@ -45,11 +45,7 @@ class CommandCreateDependencyMap:
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
-        try:  
-            import graphviz 
-        except ImportError:  
-            print("pygraphviz not available - install and try again later")
-            return
+        
         Gui.addModule("UtilsAssembly")
 
         panel = TaskAssemblyCreateDependencyMap()
@@ -70,6 +66,11 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.form.btnExport.clicked.connect(self.exportMap)
 
     def renderMap(self):
+        try:  
+            import graphviz   # type: ignore
+        except ImportError:  
+            print("pygraphviz not available - install and try again later")
+            return
         self.g = graphviz.Graph()
         self.g.attr()
 
@@ -103,19 +104,19 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             with open(path, "wb") as f:
                 f.write(self.svg_data)
 
-        elif fmt == "pdf":
-            renderer = QSvgRenderer(self.svg_data)
-            printer = QPrinter()
-            printer.setOutputFormat(QPrinter.PdfFormat)
-            printer.setOutputFileName(path)
+        # elif fmt == "pdf":
+        #     renderer = QSvgRenderer(self.svg_data)
+        #     printer = QPrinter()
+        #     printer.setOutputFormat(QPrinter.PdfFormat)
+        #     printer.setOutputFileName(path)
 
-            bounds = renderer.viewBoxF()
-            printer.setPaperSize(bounds.size(), QPrinter.Point)
-            printer.setFullPage(True)
+        #     bounds = renderer.viewBoxF()
+        #     printer.setPaperSize(bounds.size(), QPrinter.Point)
+        #     printer.setFullPage(True)
 
-            painter = QPainter(printer)
-            renderer.render(painter)
-            painter.end()
+        #     painter = QPainter(printer)
+        #     renderer.render(painter)
+        #     painter.end()
 
         else:
             self.renderer = QSvgRenderer(self.svg_data)
