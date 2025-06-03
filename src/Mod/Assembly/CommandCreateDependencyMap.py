@@ -162,7 +162,7 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             self.addsSubGraphNodes(g, sub)
         with g.subgraph(name = 'cluster_0 ') as s:
             for part in UtilsAssembly.getParts(assembly):
-                s.node(part.Name, style="filled", fillcolor="lightgrey")
+                s.node(part.Label, style="filled", fillcolor="lightgrey")
         
 
     def addsSubGraphNodes(self, g, assembly):
