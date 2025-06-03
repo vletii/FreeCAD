@@ -596,6 +596,52 @@ bool StdCmdDependencyGraph::isActive()
 }
 
 //===========================================================================
+// Std_DependencyMap
+//===========================================================================
+
+DEF_STD_CMD_A(StdCmdDependencyMap)
+
+StdCmdDependencyMap::StdCmdDependencyMap()
+  : Command("Std_DependencyMap")
+{
+    // setting the
+    sGroup        = "Tools";
+    sMenuText     = QT_TR_NOOP("Dependency gra&ph...");
+    sToolTipText  = QT_TR_NOOP("Show the dependency map of the objects in the active document");
+    sStatusTip    = QT_TR_NOOP("Show the dependency map of the objects in the active document");
+    sWhatsThis    = "Std_DependencyMap";
+    eType         = 0;
+    sPixmap       = "Std_DependencyMap";
+}
+
+void StdCmdDependencyMap::activated(int iMsg)
+{
+    Q_UNUSED(iMsg);
+    App::Document* doc = App::GetApplication().getActiveDocument();
+    auto view = new Gui::GraphvizView(*doc);
+    const std::vector<Gui::SelectionObject> &sel = Gui::Selection().getSelectionEx();
+    if (!sel.empty()) {
+        const App::DocumentObject* assemblyObj = sel[0].getObject();
+        if (assemblyObj) {
+            Base::Console().Message(
+                "StdCmdDependencyMap::activated(int iMsg) called for assembly: %s\n",
+                assemblyObj->getFullName());
+        } else {
+            Base::Console().Message("StdCmdDependencyMap::activated(int iMsg) called, but no valid object selected\n");
+        }
+    } else {
+        Base::Console().Message("StdCmdDependencyMap::activated(int iMsg) called, but no selection found\n");
+    }
+    view->setWindowTitle(qApp->translate("Std_DependencyMap","Dependency map"));
+    getMainWindow()->addWindow(view);
+}
+
+bool StdCmdDependencyMap::isActive()
+{
+    return (getActiveGuiDocument() ? true : false);
+}
+
+//===========================================================================
 // Std_ExportDependencyGraph
 //===========================================================================
 
@@ -1994,6 +2040,8 @@ void CreateDocCommands()
     rcCmdMgr.addCommand(new StdCmdMergeProjects());
     rcCmdMgr.addCommand(new StdCmdDependencyGraph());
     rcCmdMgr.addCommand(new StdCmdExportDependencyGraph());
+
+    rcCmdMgr.addCommand(new StdCmdDependencyMap());
 
     rcCmdMgr.addCommand(new StdCmdSave());
     rcCmdMgr.addCommand(new StdCmdSaveAs());

@@ -262,6 +262,14 @@ GraphvizView::GraphvizView(App::Document & _doc, QWidget* parent)
     updateSvgItem(_doc);
 }
 
+// GraphvizView::GraphvizView(App::DocumentObject* &_obj, QWidget* parent)
+//   : MDIView(nullptr, parent)
+//   , doc(_doc)
+//   , nPending(0)
+// {
+//     Base::Console().Message("GraphvizView\n");
+// }
+
 GraphvizView::~GraphvizView()
 {
     delete scene;

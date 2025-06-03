@@ -43,6 +43,7 @@ class GuiExport GraphvizView : public MDIView
 
 public:
     explicit GraphvizView(App::Document &_doc, QWidget* parent=nullptr);
+    GraphvizView(App::DocumentObject* &_obj, QWidget* parent=nullptr);
     ~GraphvizView() override;
 
     QByteArray exportGraph(const QString& filter);

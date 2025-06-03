@@ -1,148 +1,130 @@
 import os
 import FreeCAD as App
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
+
 if App.GuiUp:
     import FreeCADGui as Gui
-    from PySide2 import QtWidgets, QtCore, QtGui
-    from PySide2.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog
-    from PySide2.QtCore import Qt, QPointF
-    from PySide2.QtGui import QPainter, QPen, QBrush, QImage
-    from PySide2.QtSvg import QSvgRenderer, QGraphicsSvgItem
+    from PySide import QtCore, QtWidgets
+    from PySide.QtSvg import QSvgRenderer
+    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog, QToolBar, QAction, QFileDialog
+    from PySide2.QtGui import QImage, QPainter
+    from PySide2.QtCore import Qt
+    from PySide.QtSvg import QGraphicsSvgItem
+    from PySide2.QtPrintSupport import QPrinter
+    import graphviz
 
-from PIL import Image as PILImage
 import UtilsAssembly
+import Assembly_rc
 
+
+title = "Assembly Command to show Dependency Map"
+author = "Ondsel"
+url = "https://www.freecad.org/"
 
 class CommandCreateDependencyMap:
+    def init(self):
+        pass
+
     def GetResources(self):
+
         return {
+            # TODO change pixmap icon
             "Pixmap": "Assembly_ExportASMT",
-            "MenuText": "Create a Dependency Map",
-            "ToolTip": "Create a Dependency Map",
+            "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateDependencyMap", "Create a Dependency Map"),
+            # "Accel": "Z", # shortcut key - define later maybe
+            "ToolTip": QT_TRANSLATE_NOOP(
+                "Assembly_CreateDependencyMap",
+                "Create a Dependency Map",
+            ),
         }
 
     def IsActive(self):
         return UtilsAssembly.isAssemblyCommandActive()
 
     def Activated(self):
+        # print("Python: About to run Std_DependencyMap command")
+        # print("Python: Finished running Std_DependencyMap command")
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(assembly)
+        Gui.runCommand("Std_DependencyMap")
         panel = TaskAssemblyCreateDependencyMap()
         Gui.Control.showDialog(panel)
 
 class TaskAssemblyCreateDependencyMap(QtCore.QObject):
-    def __init__(self):
+    def __init__(self):  
         super().__init__()
         self.assembly = UtilsAssembly.activeAssembly()
+
         if not self.assembly:
             return
 
+        self.dependency_map = None
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
 
         self.form.btnGenerate.clicked.connect(self.renderMap)
-        self.form.btnExport.clicked.connect(self.exportMap)
-
-        self.window = QtWidgets.QMainWindow()
-        self.window.setWindowTitle("Dependency Map")
-        self.scene = QGraphicsScene()
-        self.view = DependencyMapView(self.scene)
-        self.window.setCentralWidget(self.view)
-        self.nodes = {}
+        # self.form.btnExport.clicked.connect(self.exportMap)
 
     def renderMap(self):
-        self.scene.clear()
-        self.nodes.clear()
-        start_y = 0
-        self.add_parts(self.assembly, 0, start_y)
-        self.visualize()
-
-    def add_parts(self, assembly, x, y, parent_pos=None):
-        label = assembly.Name
-        pos = QPointF(x, y)
-        rect = self.scene.addRect(x, y, 120, 40, QtGui.QPen(Qt.black), QtGui.QBrush(Qt.lightGray))
-        text = self.scene.addText(label)
-        text.setPos(x + 10, y + 10)
-        self.nodes[label] = pos
-
-        if parent_pos:
-            self.drawEdge(parent_pos, pos)
-
-        y_offset = y + 120
-        for part in UtilsAssembly.getParts(assembly):
-            p_label = part.Label
-            part_pos = QPointF(x + 160, y_offset)
-            rect = self.scene.addRect(part_pos.x(), part_pos.y(), 100, 40, QtGui.QPen(Qt.black), QtGui.QBrush(Qt.cyan))
-            text = self.scene.addText(p_label)
-            text.setPos(part_pos.x() + 10, part_pos.y() + 10)
-            self.nodes[p_label] = part_pos
-            self.drawEdge(pos, part_pos)
-            y_offset += 120
-
-        for sub in UtilsAssembly.getSubAssemblies(assembly):
-            y_offset += 40
-            self.add_parts(sub, x + 160, y_offset, pos)
-
-        # Draw edges for joints
-        for joint in self.assembly.Joints:
-            part1 = UtilsAssembly.getMovingPart(self.assembly, joint.Reference1)
-            part2 = UtilsAssembly.getMovingPart(self.assembly, joint.Reference2)
-            if part1 and part2 and part1.Label in self.nodes and part2.Label in self.nodes:
-                self.drawEdge(self.nodes[part1.Label], self.nodes[part2.Label], color=Qt.red)
+        print("Starting renderMap...")
+        doc = self.assembly.Document
+        print(f"Got active document: {doc.Name}")
+        App.ParamGet("User parameter:BaseApp/Preferences/Assembly").SetString("TargetAssembly", assembly.Name)
+        Gui.runCommand("Std_DependencyMap")
 
 
-    def drawEdge(self, start, end, color=Qt.black):
-        line = QtCore.QLineF(start + QPointF(60, 20), end + QPointF(0, 20))
-        pen = QtGui.QPen(color, 2)
-        self.scene.addLine(line, pen)
-
-
-    def visualize(self):
-        mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
-        if mdi_area:
-            sub_window = mdi_area.addSubWindow(self.view)
-            sub_window.show()
-        else:
-            self.window.show()
-
+    # TODO check exportation
     def exportMap(self):
-        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;PDF (*.pdf)"
+        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
         path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
 
         if not path:
             return
 
         if "PNG" in selected_filter:
-            fmt = "PNG"
+            fmt = "png"
         elif "JPEG" in selected_filter:
-            fmt = "JPEG"
+            fmt = "jpg"
         elif "Bitmap" in selected_filter:
-            fmt = "BMP"
+            fmt = "bmp"
         elif "Scalable" in selected_filter:
-            fmt = "SVG"
+            fmt = "svg"
         elif "PDF" in selected_filter:
             fmt = "pdf"
+        else:
+            fmt = "png"
 
-        if not path.lower().endswith(f".{fmt.lower()}"):
-            path += f".{fmt.lower()}"
+        if not path.lower().endswith(f".{fmt}"):
+            path += f".{fmt}"
 
-        rect = self.scene.sceneRect()
+        # Handle SVG export directly
+        if fmt == "svg":
+            with open(path, "wb") as f:
+                f.write(self.svg_data)
+            return
 
-        image = QImage(rect.size().toSize(), QImage.Format_ARGB32)
-        image.fill(Qt.white)
+        # Use QSvgRenderer to render to image
+        renderer = QSvgRenderer(self.svg_data)
+        bounds = renderer.viewBoxF()
+        size = bounds.size().toSize()
+
+        if size.width() == 0 or size.height() == 0:
+            return
+
+        image = QImage(size, QImage.Format_ARGB32)
+        image.fill(Qt.transparent)
+
         painter = QPainter(image)
-        self.scene.render(painter)
+        renderer.render(painter)
         painter.end()
 
-        if fmt == "pdf": # Save as temporary PNG, then convert to PDF using Pillow
-            temp_png = path[:-4] + "_temp_export.png"
-            image.save(temp_png)
-            pil_img = PILImage.open(temp_png)
-            pil_img.save(path, "PDF", resolution=100.0)
-            os.remove(temp_png)
-
+        if fmt == "pdf":
+            image.save(path, "PDF")
         else:
-            image.save(path)
+            image.save(path, fmt.upper())
 
     def accept(self):
         self.deactivate()
@@ -157,12 +139,23 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             Gui.Control.closeDialog()
 
 
-class DependencyMapView(QGraphicsView):
-    def __init__(self, scene, parent=None):
-        super().__init__(scene, parent)
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        
+class GraphvizSvgView(QMainWindow):
+    def __init__(self, svg_data, dependency_map, parent=None):
+        super().__init__(parent)
+        self.dependency_map = dependency_map
+        self.setWindowTitle("Dependency Graph")
         self._zoom = 0
+
+        self.scene = QGraphicsScene(self)
+        self.renderer = QSvgRenderer(svg_data, self)
+        self.svg_item = QGraphicsSvgItem()
+        self.svg_item.setSharedRenderer(self.renderer)
+        self.scene.addItem(self.svg_item)
+
+        self.view = QGraphicsView(self.scene, self)
+        self.view.setDragMode(QGraphicsView.ScrollHandDrag)
+
+        self.setCentralWidget(self.view)
 
     def wheelEvent(self, event):
         zoomInFactor = 1.25
@@ -175,12 +168,12 @@ class DependencyMapView(QGraphicsView):
             zoomFactor = zoomOutFactor
             self._zoom -= 1
 
-        self.scale(zoomFactor, zoomFactor)
-
-    def mouseDoubleClickEvent(self, event):
-        self.resetTransform()
+        self.view.scale(zoomFactor, zoomFactor)
+    
+    def updateSvg(self, svg_data):
+        self.renderer.load(svg_data)
+        self.view.resetTransform()
         self._zoom = 0
-        super().mouseDoubleClickEvent(event)
 
 
 if App.GuiUp:
