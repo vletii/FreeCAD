@@ -107,7 +107,7 @@ class AssemblyWorkbench(Workbench):
         ]
         
         cmdDependencyMap = [
-            "Assembly_CreateDependencyMap", # TODO add export, tree and graph
+            "Assembly_CreateDependencyMap",
         ]
 
         self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "Assembly"), cmdList)

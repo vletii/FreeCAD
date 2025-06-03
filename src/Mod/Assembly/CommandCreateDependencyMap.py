@@ -7,12 +7,17 @@ if App.GuiUp:
     import FreeCADGui as Gui
     from PySide import QtCore, QtWidgets
     from PySide.QtSvg import QSvgRenderer
-    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog, QToolBar, QAction, QFileDialog
+    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog, QFileDialog, QMessageBox
     from PySide2.QtGui import QImage, QPainter
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
-    #from PySide2.QtPrintSupport import QPrinter
     
+try:
+    import graphviz
+    GRAPHVIZ_AVAILABLE = True
+except ImportError:
+    graphviz = None
+    GRAPHVIZ_AVAILABLE = False
 
 import UtilsAssembly
 import Assembly_rc
@@ -31,7 +36,6 @@ class CommandCreateDependencyMap:
             # TODO change pixmap icon
             "Pixmap": "Assembly_ExportASMT",
             "MenuText": QT_TRANSLATE_NOOP("Assembly_CreateDependencyMap", "Create a Dependency Map"),
-            # "Accel": "Z", # shortcut key - define later maybe
             "ToolTip": QT_TRANSLATE_NOOP(
                 "Assembly_CreateDependencyMap",
                 "Create a Dependency Map",
@@ -45,7 +49,14 @@ class CommandCreateDependencyMap:
         assembly = UtilsAssembly.activeAssembly()
         if not assembly:
             return
-        
+        if not GRAPHVIZ_AVAILABLE:
+            QMessageBox.warning(
+                Gui.getMainWindow(),
+                "Feature Not Available.",
+                "Cannot render map: graphviz library is not installed."
+            )
+            return
+
         Gui.addModule("UtilsAssembly")
 
         panel = TaskAssemblyCreateDependencyMap()
@@ -65,12 +76,7 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.form.btnGenerate.clicked.connect(self.renderMap)
         self.form.btnExport.clicked.connect(self.exportMap)
 
-    def renderMap(self):
-        try:  
-            import graphviz   # type: ignore
-        except ImportError:  
-            print("pygraphviz not available - install and try again later")
-            return
+    def renderMap(self):            
         self.g = graphviz.Graph()
         self.g.attr()
 
@@ -87,44 +93,42 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             return
 
         if "PNG" in selected_filter:
-            fmt = "PNG"
+            fmt = "png"
         elif "JPEG" in selected_filter:
-            fmt = "JPEG"
+            fmt = "jpeg"
         elif "Bitmap" in selected_filter:
-            fmt = "BMP"
+            fmt = "bmp"
         elif "Scalable" in selected_filter:
-            fmt = "SVG"
+            fmt = "svg"
         elif "PDF" in selected_filter:
             fmt = "pdf"
 
-        if not path.lower().endswith(f".{fmt.lower()}"):
-            path += f".{fmt.lower()}"
+        if not path.lower().endswith(f".{fmt}"):
+            path += f".{fmt}"
 
-        if fmt == "SVG":
-            with open(path, "wb") as f:
-                f.write(self.svg_data)
+        if fmt == "svg":
+            try:
+                with open(path, "wb") as f:
+                    f.write(self.svg_data)
+                success = True
+            except Exception as e:
+                success = False
 
-        # elif fmt == "pdf":
-        #     renderer = QSvgRenderer(self.svg_data)
-        #     printer = QPrinter()
-        #     printer.setOutputFormat(QPrinter.PdfFormat)
-        #     printer.setOutputFileName(path)
-
-        #     bounds = renderer.viewBoxF()
-        #     printer.setPaperSize(bounds.size(), QPrinter.Point)
-        #     printer.setFullPage(True)
-
-        #     painter = QPainter(printer)
-        #     renderer.render(painter)
-        #     painter.end()
-
-        else:
+        elif fmt == 'pdf':
+            try:
+                pdf_data = self.g.pipe(format='pdf')
+                with open(path, 'wb') as f:
+                    f.write(pdf_data)
+                success = True
+            except Exception as e:
+                success = False
+        else: 
             self.renderer = QSvgRenderer(self.svg_data)
             bounds = self.renderer.viewBoxF()
             size = bounds.size().toSize()
 
             if size.width() == 0 or size.height() == 0:
-                return
+                success = False
 
             image = QImage(size, QImage.Format_ARGB32)
             image.fill(Qt.transparent)
@@ -132,6 +136,24 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             painter = QPainter(image)
             self.renderer.render(painter)
             painter.end()
+
+            success = image.save(path, fmt)
+
+        self.showExportState(success, path)
+
+    def showExportState(self, success, path):
+        if success:
+            QMessageBox.information(
+                    Gui.getMainWindow() if 'Gui' in globals() else None,
+                    "Export Successful",
+                    f"Dependency map exported successfully to:\n{path}"
+            )
+        else: 
+            QMessageBox.warning(
+                    Gui.getMainWindow() if 'Gui' in globals() else None,
+                    "Export Error",
+                    f"Failed to save image to {path}"
+            )
 
     def addNodesToGraph(self, g):
         assembly = UtilsAssembly.activeAssembly()
@@ -164,7 +186,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
                 # g.edge(joint.Label, part2.Label)
                 
                 if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
-                    print("show joints enabled")
                     g.edge(part1.Label, part2.Label, style="dashed", color="blue", label=joint.Label, labelfloat="true")
                 #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
                 #     g.edge(part1.Label, joint.Label)
