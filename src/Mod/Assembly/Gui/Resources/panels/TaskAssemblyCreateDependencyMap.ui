@@ -34,7 +34,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="Gui::PrefCheckBox" name="CheckBox_ShowHiddenAssemblies">
+    <widget class="Gui::PrefCheckBox" name="CheckBox_ShowSubAssemblies">
      <property name="toolTip">
       <string>If checked, sub-assemblies will be shown.</string>
      </property>
