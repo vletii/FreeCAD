@@ -1,3 +1,27 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# /**************************************************************************
+#                                                                           *
+#    Copyright (c) 2025 Ondsel <development@ondsel.com>                     *
+#                                                                           *
+#    This file is part of FreeCAD.                                          *
+#                                                                           *
+#    FreeCAD is free software: you can redistribute it and/or modify it     *
+#    under the terms of the GNU Lesser General Public License as            *
+#    published by the Free Software Foundation, either version 2.1 of the   *
+#    License, or (at your option) any later version.                        *
+#                                                                           *
+#    FreeCAD is distributed in the hope that it will be useful, but         *
+#    WITHOUT ANY WARRANTY; without even the implied warranty of             *
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU       *
+#    Lesser General Public License for more details.                        *
+#                                                                           *
+#    You should have received a copy of the GNU Lesser General Public       *
+#    License along with FreeCAD. If not, see                                *
+#    <https://www.gnu.org/licenses/>.                                       *
+#                                                                           *
+# **************************************************************************/
+
+import re
 import os
 import FreeCAD as App
 
@@ -7,7 +31,14 @@ if App.GuiUp:
     import FreeCADGui as Gui
     from PySide import QtCore, QtWidgets
     from PySide.QtSvg import QSvgRenderer
-    from PySide.QtWidgets import QMainWindow, QGraphicsView, QGraphicsScene, QFileDialog, QFileDialog, QMessageBox
+    from PySide.QtWidgets import (
+        QMainWindow, 
+        QGraphicsView, 
+        QGraphicsScene, 
+        QFileDialog, 
+        QFileDialog, 
+        QMessageBox
+    )
     from PySide2.QtGui import QImage, QPainter
     from PySide2.QtCore import Qt
     from PySide.QtSvg import QGraphicsSvgItem
@@ -65,10 +96,6 @@ class CommandCreateDependencyMap:
 class TaskAssemblyCreateDependencyMap(QtCore.QObject):
     def __init__(self):  
         super().__init__()
-        self.assembly = UtilsAssembly.activeAssembly()
-
-        if not self.assembly:
-            return
 
         self.dependency_map = None
         self.form = Gui.PySideUic.loadUi(":/panels/TaskAssemblyCreateDependencyMap.ui")
@@ -77,6 +104,9 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.form.btnExport.clicked.connect(self.exportMap)
 
     def renderMap(self):            
+        self.assembly = UtilsAssembly.activeAssembly()
+        if not self.assembly:
+            return
         self.g = graphviz.Graph()
         self.g.attr()
 
@@ -86,7 +116,8 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         self.visualizeMap()
         
     def exportMap(self):
-        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap (*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
+        filters = "PNG (*.png);;JPEG (*.jpg *.jpeg);;Bitmap " \
+"(*.bmp);;Scalable Vector Graphics (*.svg);;PDF (*.pdf)"
         path, selected_filter = QFileDialog.getSaveFileName(None, "Export Dependency Map", "", filters)
 
         if not path:
@@ -166,33 +197,32 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         
 
     def addsSubGraphNodes(self, g, assembly):
-        #subgraph
-        with g.subgraph(name = 'cluster_' + assembly.Name) as s:
-            s.attr(style="filled", color= "lightpink", label=assembly.Name)
-            subassembly = UtilsAssembly.getSubAssemblies(assembly)
-            for sub in subassembly:
-                self.addsSubGraphNodes(g, sub)
-            for obj in UtilsAssembly.getParts(assembly):
-                s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
+        if self.form.CheckBox_ShowSubAssemblies.isChecked():
+            with g.subgraph(name = 'cluster_' + assembly.Name) as s:
+                s.attr(style="filled", color= "lightpink", label=assembly.Name)
+                subassembly = UtilsAssembly.getSubAssemblies(assembly)
+                for sub in subassembly:
+                    self.addsSubGraphNodes(g, sub)
+                for obj in UtilsAssembly.getParts(assembly):
+                    s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
+        else:
+            
+            g.node(assembly.Label, label=assembly.Label, style="filled", fillcolor="lightpink")
 
     def addEdgesToGraph(self, g, assembly):
         joints = assembly.Joints
         for joint in joints:
-            #g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
             part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
             part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
-            if part1 and part2:
-                # g.edge(part1.Label, joint.Label)
-                # g.edge(joint.Label, part2.Label)
-                
-                if self.form.CheckBox_ShowJoints.isChecked(): # if show joints
-                    g.edge(part1.Label, part2.Label, style="dashed", color="blue", label=joint.Label, labelfloat="true")
-                #     g.node(joint.Label, label=joint.Label, style="filled", fillcolor = "green",shape='Mdiamond')
-                #     g.edge(part1.Label, joint.Label)
-                #     g.edge(joint.Label, part2.Label)
-                # else:
+            if not self.form.CheckBox_ShowSubAssemblies.isChecked() and part1 and part2:
+                part1 = UtilsAssembly.getAssemblyfromPart(part1)
+                part2 = UtilsAssembly.getAssemblyfromPart(part2)
+            if part1 and part2 and part1.Label != part2.Label:
+                if self.form.CheckBox_ShowJoints.isChecked():
+                    g.edge(part1.Label, part2.Label, style="dashed", label=joint.Label)
                 else:
                     g.edge(part1.Label, part2.Label)
+                
 
     def visualizeMap(self):
         self.svg_data = self.g.pipe(format="svg")

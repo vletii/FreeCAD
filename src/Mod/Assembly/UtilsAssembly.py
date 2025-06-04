@@ -1375,3 +1375,10 @@ def getParts(assembly):
             parts.append(obj)
     return parts
 
+def getAssemblyfromPart(part):
+    """Returns the assembly above that contains the part, or None if not found."""
+    
+    for obj in part.InList:
+        if  obj.TypeId == "Assembly::AssemblyLink":
+            return obj
+    return part
