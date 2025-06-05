@@ -1382,3 +1382,19 @@ def getAssemblyfromPart(part):
         if  obj.TypeId == "Assembly::AssemblyLink":
             return obj
     return part
+
+def getGroundedJoints(assembly):
+    grounded_joints = []
+    joints = assembly.OutList
+    for joint in joints:
+        if hasattr(joint, "ObjectToGround"):
+            grounded_joints.append(joint)
+    return grounded_joints
+
+def getGroundPartfromJoint(joint):
+    """Returns the part that is grounded by the joint, or None if not found."""
+    if hasattr(joint, "ObjectToGround"):
+        ground_part = joint.ObjectToGround
+        if ground_part and ground_part.isDerivedFrom("App::Part"):
+            return ground_part
+    return None

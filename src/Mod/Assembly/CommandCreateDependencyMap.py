@@ -193,25 +193,25 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             self.addsSubGraphNodes(g, sub)
         with g.subgraph(name = 'cluster_0 ') as s:
             for part in UtilsAssembly.getParts(assembly):
-                s.node(part.Label, style="filled", fillcolor="lightgrey")
+                s.node(part.Label, style="filled", fillcolor="powderblue")
         
 
     def addsSubGraphNodes(self, g, assembly):
         if self.form.CheckBox_ShowSubAssemblies.isChecked():
             with g.subgraph(name = 'cluster_' + assembly.Name) as s:
-                s.attr(style="filled", color= "lightpink", label=assembly.Name)
+                s.attr(style="filled", color= "lightgoldenrod1", label=assembly.Name)
                 subassembly = UtilsAssembly.getSubAssemblies(assembly)
                 for sub in subassembly:
                     self.addsSubGraphNodes(g, sub)
                 for obj in UtilsAssembly.getParts(assembly):
-                    s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="lightblue")
+                    s.node(obj.Label, label=obj.Label,  style="filled", fillcolor="powderblue")
         else:
-            
-            g.node(assembly.Label, label=assembly.Label, style="filled", fillcolor="lightpink")
+            g.node(assembly.Label, label=assembly.Label, style="filled", fillcolor="lightgoldenrod1")
 
     def addEdgesToGraph(self, g, assembly):
         joints = assembly.Joints
         for joint in joints:
+            #print(joint.Label, joint.Reference1, joint.Reference2)
             part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
             part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
             if not self.form.CheckBox_ShowSubAssemblies.isChecked() and part1 and part2:
@@ -219,10 +219,19 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
                 part2 = UtilsAssembly.getAssemblyfromPart(part2)
             if part1 and part2 and part1.Label != part2.Label:
                 if self.form.CheckBox_ShowJoints.isChecked():
-                    g.edge(part1.Label, part2.Label, style="dashed", label=joint.Label)
+                    g.edge(part1.Label, part2.Label, label=joint.Label)
                 else:
                     g.edge(part1.Label, part2.Label)
-                
+        groundedjoints = UtilsAssembly.getGroundedJoints(assembly)
+        if groundedjoints:
+            g.node("Ground", label="Ground", style="filled", fillcolor="salmon")
+        for joint in groundedjoints:
+            #joint is FeaturePython
+            part = joint.ObjectToGround
+            if not self.form.CheckBox_ShowSubAssemblies.isChecked() and part:
+                part = UtilsAssembly.getAssemblyfromPart(part)
+            if part:
+                g.edge(part.Label, "Ground", style="dotted", label=joint.Label)
 
     def visualizeMap(self):
         self.svg_data = self.g.pipe(format="svg")
