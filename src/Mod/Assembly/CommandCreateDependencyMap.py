@@ -211,7 +211,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
     def addEdgesToGraph(self, g, assembly):
         joints = assembly.Joints
         for joint in joints:
-            #print(joint.Label, joint.Reference1, joint.Reference2)
             part1 = UtilsAssembly.getMovingPart(assembly, joint.Reference1)
             part2 = UtilsAssembly.getMovingPart(assembly, joint.Reference2)
             if not self.form.CheckBox_ShowSubAssemblies.isChecked() and part1 and part2:
@@ -226,12 +225,14 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
         if groundedjoints:
             g.node("Ground", label="Ground", style="filled", fillcolor="salmon")
         for joint in groundedjoints:
-            #joint is FeaturePython
             part = joint.ObjectToGround
             if not self.form.CheckBox_ShowSubAssemblies.isChecked() and part:
                 part = UtilsAssembly.getAssemblyfromPart(part)
             if part:
-                g.edge(part.Label, "Ground", style="dotted", label=joint.Label)
+                if self.form.CheckBox_ShowJoints.isChecked():
+                    g.edge(part.Label, "Ground", style="dotted", label=joint.Label)
+                else:
+                    g.edge(part.Label, "Ground", style="dotted")
 
     def visualizeMap(self):
         self.svg_data = self.g.pipe(format="svg")
