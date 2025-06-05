@@ -236,7 +236,6 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
 
     def visualizeMap(self):
         self.svg_data = self.g.pipe(format="svg")
-
         mdi_area = Gui.getMainWindow().findChild(QtWidgets.QMdiArea)
 
         if not mdi_area: 
@@ -247,7 +246,7 @@ class TaskAssemblyCreateDependencyMap(QtCore.QObject):
             self.dependency_map.raise_()
             self.dependency_map.activateWindow()
         else:
-            self.dependency_map = GraphvizSvgView(self.svg_data, self.dependency_map)
+            self.dependency_map = GraphvizSvgView(self.svg_data, None)
             sub_window = mdi_area.addSubWindow(self.dependency_map)
             sub_window.show()
 
@@ -297,7 +296,10 @@ class GraphvizSvgView(QMainWindow):
     
     def updateSvg(self, svg_data):
         self.renderer.load(svg_data)
+        self.svg_item.setSharedRenderer(self.renderer)
         self.view.resetTransform()
+        self.scene.update() 
+        self.svg_item.update()
         self._zoom = 0
 
 
