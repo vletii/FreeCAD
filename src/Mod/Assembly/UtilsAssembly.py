@@ -1354,3 +1354,37 @@ def generatePropertySettings(documentObject):
             # print("Not processing properties of type ", propertyType)
             pass
     return "\n".join(commands) + "\n"
+
+
+def getSubAssemblies(assembly):
+    subAssemblies = []
+    for obj in assembly.OutList:
+        if obj.TypeId == "Assembly::AssemblyLink":
+            subAssemblies.append(obj)
+    return subAssemblies
+
+
+def getParts(assembly):
+    parts = []
+    for obj in assembly.OutList:
+        if isLink(obj):
+            linkobj = obj.getLinkedObject()
+            if linkobj.TypeId == "App::Part" or linkobj.TypeId == "Part::Feature" or linkobj.TypeId == "Part::FeaturePython":
+                parts.append(obj)
+        elif obj.TypeId == "App::Part" or obj.TypeId == "Part::Feature" or obj.TypeId == "Part::FeaturePython":
+            parts.append(obj)
+    return parts
+
+def getAssemblyfromPart(part):
+    for obj in part.InList:
+        if  obj.TypeId == "Assembly::AssemblyLink":
+            return obj
+    return part
+
+def getGroundedJoints(assembly):
+    grounded_joints = []
+    joints = assembly.OutList
+    for joint in joints:
+        if hasattr(joint, "ObjectToGround"):
+            grounded_joints.append(joint)
+    return grounded_joints
